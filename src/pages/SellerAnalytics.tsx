@@ -151,7 +151,7 @@ const SellerAnalytics = () => {
               <div className="p-6">
                 <h3 className="mb-6 text-lg font-semibold">Revenue Overview</h3>
                 <div className="space-y-4">
-                  {analyticsData.revenueData.map((item, index) => (
+                  {analyticsData.revenueData.map((item) => (
                     <div key={item.month} className="flex items-center justify-between">
                       <span className="w-12 text-sm font-medium text-gray-700">{item.month}</span>
                       <div className="flex-1 mx-4">
@@ -185,7 +185,7 @@ const SellerAnalytics = () => {
               <div className="p-6">
                 <h3 className="mb-6 text-lg font-semibold">Popular Services</h3>
                 <div className="space-y-4">
-                  {analyticsData.popularServices.map((service, index) => (
+                  {analyticsData.popularServices.map((service) => (
                     <div key={service.name} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50">
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{service.name}</h4>
