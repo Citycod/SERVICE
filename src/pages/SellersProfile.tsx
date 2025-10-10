@@ -1,44 +1,30 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import  { useState, useEffect } from "react";
-import { useNavigate, useParams, } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
-  Home,
   MessageCircle,
-  Briefcase,
-  Settings,
-  Wallet,
-  Plus,
   Star,
   TrendingUp,
   User,
-  Edit3,
   MapPin,
   Calendar,
   Award,
   CheckCircle,
-  Share2,
   Phone,
   Mail,
   Globe,
-  Image,
-  Camera,
   Heart,
-  ExternalLink,
   Users,
   Clock,
-  ThumbsUp,
-  MessageSquare,
   ArrowLeft,
 } from "lucide-react";
 
 // Import the shared types
-// Import the shared types
-import type { Seller, Service, Review } from '../types/seller';
+import type { Seller, Service } from '../types/seller';
 
 const SellersProfile = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("services");
   const [isFollowing, setIsFollowing] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
@@ -149,20 +135,20 @@ const SellersProfile = () => {
   ];
 
   const handleMessageSeller = () => {
-  if (seller) {
-    navigate('/messaging', { 
-      state: { 
-        recipient: {
-          id: seller.id,
-          name: seller.name,
-          avatar: seller.avatar,
-          role: 'seller'
-        },
-        initialMessage: `Hi ${seller.name}, I'm interested in your services and would like to know more about your work.`
-      } 
-    })
+    if (seller) {
+      navigate('/messaging', { 
+        state: { 
+          recipient: {
+            id: seller.id,
+            name: seller.name,
+            avatar: seller.avatar,
+            role: 'seller'
+          },
+          initialMessage: `Hi ${seller.name}, I'm interested in your services and would like to know more about your work.`
+        } 
+      })
+    }
   }
-}
 
   const handleContactSeller = () => {
     setShowContactModal(true);
@@ -247,12 +233,12 @@ const SellersProfile = () => {
                 Close
               </button>
               <button 
-  onClick={handleMessageSeller}
-  className="btn btn-primary"
->
-  <MessageCircle className="w-4 h-4 mr-2" />
-  Message
-</button>
+                onClick={handleMessageSeller}
+                className="btn btn-primary"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Message
+              </button>
             </div>
           </div>
         </div>
