@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { 
   Upload, 
-  Image , 
+  
   X, 
    
   Tag, 
@@ -476,4 +476,5 @@ const CreateService = () => {
 
 
 export default CreateService
+
 
