@@ -6,7 +6,7 @@ import {
   Upload, 
   Image , 
   X, 
-  Clock, 
+   
   Tag, 
   MapPin,
   AlertCircle,
@@ -476,3 +476,4 @@ const CreateService = () => {
 
 
 export default CreateService
+
