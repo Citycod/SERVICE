@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { Link } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
 
 const PrivacyPolicy = () => {
   return (
@@ -83,5 +83,6 @@ const PrivacyPolicy = () => {
     </div>
   );
 };
+
 
 export default PrivacyPolicy;
