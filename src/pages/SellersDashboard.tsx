@@ -2,10 +2,8 @@
 import { useNavigate } from "react-router-dom";
 import {
   Home,
-  MessageCircle,
   Briefcase,
   Settings,
-  Search,
   Wallet,
   Plus,
   Star,
@@ -13,19 +11,18 @@ import {
   ArrowRight,
   LogOut,
   User,
-  BarChart3, // Added for Analytics
-  CreditCard, // Added for Withdrawal
+  BarChart3,
+  CreditCard,
 } from "lucide-react";
 
 const SellersDashboard = () => {
   const navigate = useNavigate();
-  const sellerId = "456"; // Mock seller ID for Chiamaka Okoro; replace with actual ID from auth
 
   // Seller activity data - updated with order IDs
   const recentOrders = [
     {
       id: 1,
-      orderId: "ORD-001", // Added orderId for navigation
+      orderId: "ORD-001",
       type: "order",
       text: "New order for 'Traditional Dress Design' from Alex Johnson.",
       time: "2 hours ago",
