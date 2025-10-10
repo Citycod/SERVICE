@@ -17,10 +17,6 @@ const Login = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Get the intended destination or default to appropriate dashboard
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || 
-    (formData.userType === 'seller' ? '/seller-dashboard' : '/dashboard')
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
