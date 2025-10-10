@@ -7,13 +7,13 @@ import {
   Briefcase,
   Settings,
   Search,
-  Bell,
+  
   LogOut,
   User,
   Eye,
   Star,
   TrendingUp,
-  Plus,
+  
   ArrowRight,
 } from "lucide-react";
 
@@ -399,5 +399,6 @@ const Dashboard = () => {
     </div>
   );
 };
+
 
 export default Dashboard;
