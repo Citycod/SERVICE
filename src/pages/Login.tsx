@@ -19,7 +19,7 @@ const Login = () => {
 
   // Get the intended destination or default to appropriate dashboard
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || 
-    (formData.userType === 'seller' ? '/seller-dashboard' : '/dashboard') // FIXED
+    (formData.userType === 'seller' ? '/seller-dashboard' : '/dashboard')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,7 +74,7 @@ const Login = () => {
         
         // Redirect to appropriate dashboard based on user type
         const redirectPath = formData.userType === 'seller' 
-          ? '/seller-dashboard'  // FIXED: changed from '/seller/dashboard'
+          ? '/seller-dashboard'
           : '/dashboard'
         navigate(redirectPath, { replace: true })
         setSubmitting(false)
