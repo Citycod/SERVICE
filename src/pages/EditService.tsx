@@ -17,7 +17,7 @@ const EditService = () => {
   const navigate = useNavigate();
   
   // Mock service data - replace with API call
-  const [service, setService] = useState({
+  const [service,] = useState({
     id: id || '1',
     title: 'Traditional Wedding Attire Design',
     category: 'Fashion & Design',
@@ -520,5 +520,6 @@ const EditService = () => {
     </div>
   );
 };
+
 
 export default EditService;
