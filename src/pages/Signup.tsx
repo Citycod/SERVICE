@@ -4,14 +4,15 @@ import { useAuth } from '../contexts/AuthContext';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    username: '', // For backend API
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
     role: 'buyer' as 'buyer' | 'seller',
-    category: '', // For sellers
-    address: '', // For sellers
+    category: '',
+    address: '',
+    country: '',
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -49,15 +50,21 @@ const SignUp = () => {
       setError('All fields are required for sellers');
       return;
     }
+    if (!formData.country) {
+      setError('Country is required');
+      return;
+    }
 
     setError('');
     setSubmitting(true);
 
-    // Mock API call
+    // Mock API call to backend
     setTimeout(() => {
+      // After successful backend registration, login the user
+      // Convert username to name for AuthContext
       login({
         id: '1',
-        name: formData.name,
+        name: formData.username, // Use username as name for AuthContext
         email: formData.email,
         phone: formData.phone,
         role: formData.role,
@@ -79,7 +86,7 @@ const SignUp = () => {
     setTimeout(() => {
       login({
         id: '2',
-        name: formData.name || 'Google User',
+        name: formData.username || 'Google User',
         email: formData.email,
         phone: formData.phone,
         role: formData.role,
@@ -152,19 +159,21 @@ const SignUp = () => {
             </div>
             
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="username" className="block mb-1 text-sm font-medium text-gray-700">Username</label>
+                <input
+                  id="username"
+                  type="text"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  required
+                  className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Username"
+                  placeholder="Choose a username"
+                />
+              </div>
+              
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label htmlFor="name" className="block mb-1 text-sm font-medium text-gray-700">Full Name</label>
-                  <input
-                    id="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                    className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    aria-label="Full name"
-                  />
-                </div>
                 <div>
                   <label htmlFor="email" className="block mb-1 text-sm font-medium text-gray-700">Email</label>
                   <input
@@ -177,20 +186,19 @@ const SignUp = () => {
                     aria-label="Email address"
                   />
                 </div>
-              </div>
-              
-              <div>
-                <label htmlFor="phone" className="block mb-1 text-sm font-medium text-gray-700">Phone Number</label>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  required
-                  className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-label="Phone number"
-                  placeholder="+1 (555) 123-4567"
-                />
+                <div>
+                  <label htmlFor="phone" className="block mb-1 text-sm font-medium text-gray-700">Phone Number</label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    required
+                    className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Phone number"
+                    placeholder="+233572558822"
+                  />
+                </div>
               </div>
               
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -218,6 +226,29 @@ const SignUp = () => {
                     aria-label="Confirm password"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="country" className="block mb-1 text-sm font-medium text-gray-700">Country</label>
+                <select
+                  id="country"
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  required
+                  className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="Country"
+                >
+                  <option value="">Select Country</option>
+                  <option value="Ghana">Ghana</option>
+                  <option value="Nigeria">Nigeria</option>
+                  <option value="Kenya">Kenya</option>
+                  <option value="South Africa">South Africa</option>
+                  <option value="US">United States</option>
+                  <option value="CA">Canada</option>
+                  <option value="UK">United Kingdom</option>
+                  <option value="AU">Australia</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
               
               <div 
@@ -265,6 +296,7 @@ const SignUp = () => {
                       required={formData.role === 'seller'}
                       className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       aria-label="Address"
+                      placeholder="Enter your business address"
                     />
                   </div>
                 </div>
