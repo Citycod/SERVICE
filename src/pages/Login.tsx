@@ -133,7 +133,7 @@ const Login = () => {
                   }`}
                 >
                   <User className="w-5 h-5 mr-2" />
-                  Buyer
+                  Customer
                 </button>
                 <button
                   type="button"
@@ -145,7 +145,7 @@ const Login = () => {
                   }`}
                 >
                   <Building2 className="w-5 h-5 mr-2" />
-                  Seller
+                  Vendor
                 </button>
               </div>
             </div>
