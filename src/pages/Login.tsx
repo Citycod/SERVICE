@@ -6,7 +6,7 @@ import { Eye, EyeOff, Mail, Lock, AlertCircle, User, Building2 } from 'lucide-re
 
 const Login = () => {
   const [formData, setFormData] = useState({ 
-    email: '', 
+    username: '', // Changed from email to username
     password: '',
     userType: 'buyer' as 'buyer' | 'seller'
   })
@@ -23,14 +23,8 @@ const Login = () => {
 
     try {
       // Validate inputs
-      if (!formData.email || !formData.password) {
+      if (!formData.username || !formData.password) {
         throw new Error('Please fill in all fields')
-      }
-
-      // Email format validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(formData.email)) {
-        throw new Error('Please enter a valid email address')
       }
 
       // Mock API call - replace with actual API call in production
@@ -40,8 +34,8 @@ const Login = () => {
         const mockUser = formData.userType === 'seller' 
           ? {
               id: '2',
-              name: 'Jane Smith',
-              email: formData.email,
+              name: formData.username, // Use username as name for AuthContext
+              email: `${formData.username}@example.com`, // Generate email from username for demo
               phone: '+1234567890',
               role: 'seller' as const,
               avatar: '',
@@ -53,8 +47,8 @@ const Login = () => {
             }
           : {
               id: '1',
-              name: 'John Doe',
-              email: formData.email,
+              name: formData.username, // Use username as name for AuthContext
+              email: `${formData.username}@example.com`, // Generate email from username for demo
               phone: '+1234567890',
               role: 'buyer' as const,
               avatar: '',
@@ -162,23 +156,23 @@ const Login = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email address
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                  Username
                 </label>
                 <div className="relative mt-1">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Mail className="w-5 h-5 text-gray-400" />
+                    <User className="w-5 h-5 text-gray-400" /> {/* Changed from Mail to User icon */}
                   </div>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
+                    id="username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
                     required
-                    value={formData.email}
+                    value={formData.username}
                     onChange={handleInputChange}
                     className="block w-full py-3 pl-10 pr-3 placeholder-gray-400 transition-colors border border-gray-300 rounded-md appearance-none focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="you@example.com"
+                    placeholder="Enter your username"
                   />
                 </div>
               </div>
@@ -265,7 +259,7 @@ const Login = () => {
             <div className="p-4 mt-8 rounded-lg bg-gray-50">
               <h3 className="mb-2 text-sm font-medium text-gray-900">Demo Credentials</h3>
               <p className="text-xs text-gray-600">
-                For demo purposes, you can use any valid email and password format.
+                For demo purposes, you can use any username and password.
                 The system will automatically log you in as a {formData.userType}.
               </p>
             </div>
