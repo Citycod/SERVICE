@@ -61,7 +61,7 @@ const SignUp = () => {
         country: formData.country
       };
 
-      const response = await fetch('https://service-api-7ssp.onrender.com/api/auth/register', {
+      const response = await fetch('http://service-api-7ssp.onrender.com/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
