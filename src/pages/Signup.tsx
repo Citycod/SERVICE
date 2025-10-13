@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
-    username: '', // For backend API
+    username: '',
     email: '',
     phone: '',
     password: '',
@@ -31,7 +31,7 @@ const SignUp = () => {
     
     setIsTransitioning(true);
     setTimeout(() => {
-      setFormData({ ...formData, role: newRole });
+      setFormData(prev => ({ ...prev, role: newRole }));
       setIsTransitioning(false);
     }, 300);
   };
@@ -43,13 +43,6 @@ const SignUp = () => {
       setError('Passwords do not match');
       return;
     }
-    if (
-      formData.role === 'seller' &&
-      (!formData.category || !formData.address)
-    ) {
-      setError('All fields are required for sellers');
-      return;
-    }
     if (!formData.country) {
       setError('Country is required');
       return;
@@ -58,31 +51,57 @@ const SignUp = () => {
     setError('');
     setSubmitting(true);
 
-    // Mock API call to backend
-    setTimeout(() => {
-      // After successful backend registration, login the user
-      // Convert username to name for AuthContext
-      login({
-        id: '1',
-        name: formData.username, // Use username as name for AuthContext
+    try {
+      const requestData = {
+        username: formData.username,
         email: formData.email,
+        password: formData.password,
         phone: formData.phone,
-        role: formData.role,
-        avatar: '',
-      });
-      setSubmitting(false);
+        address: formData.address || '',
+        country: formData.country
+      };
 
-      // ✅ Redirect based on role
+      const response = await fetch('https://service-api-7ssp.onrender.com/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `Registration failed with status: ${response.status}`);
+      }
+
+      // Success - show alert and redirect
+      alert('🎉 Registration successful!');
+      
+      login({
+        id: data.user?.id || data.id,
+        name: data.user?.username || data.username,
+        email: data.user?.email || data.email,
+        phone: data.user?.phone || data.phone,
+        role: formData.role,
+        avatar: data.user?.avatar || data.avatar || '',
+      });
+
       if (formData.role === 'seller') {
         navigate('/seller-dashboard');
       } else {
         navigate('/dashboard');
       }
-    }, 1000);
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Something went wrong during registration';
+      setError(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleGoogleSignUp = () => {
-    // Mock Google Sign-Up logic
     setTimeout(() => {
       login({
         id: '2',
@@ -93,7 +112,6 @@ const SignUp = () => {
         avatar: '',
       });
 
-      // ✅ Redirect based on role
       if (formData.role === 'seller') {
         navigate('/seller-dashboard');
       } else {
@@ -107,11 +125,7 @@ const SignUp = () => {
       <div className="container flex flex-col items-center justify-between px-4 py-12 mx-auto lg:flex-row">
         <div className="w-full mb-10 lg:w-1/2 lg:mb-0">
           <div className="relative">
-            <img
-              src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80"
-              alt="Professional workspace"
-              className="object-cover w-full h-auto transition-transform duration-700 transform shadow-xl rounded-xl hover:scale-105"
-            />
+            <div className="w-full h-64 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-xl"></div>
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700 opacity-20 rounded-xl"></div>
           </div>
         </div>
@@ -168,7 +182,6 @@ const SignUp = () => {
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   required
                   className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-label="Username"
                   placeholder="Choose a username"
                 />
               </div>
@@ -183,7 +196,6 @@ const SignUp = () => {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
                     className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    aria-label="Email address"
                   />
                 </div>
                 <div>
@@ -195,7 +207,6 @@ const SignUp = () => {
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     required
                     className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    aria-label="Phone number"
                     placeholder="+233572558822"
                   />
                 </div>
@@ -211,7 +222,6 @@ const SignUp = () => {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
                     className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    aria-label="Password"
                   />
                 </div>
                 <div>
@@ -223,7 +233,6 @@ const SignUp = () => {
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     required
                     className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    aria-label="Confirm password"
                   />
                 </div>
               </div>
@@ -236,7 +245,6 @@ const SignUp = () => {
                   onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                   required
                   className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-label="Country"
                 >
                   <option value="">Select Country</option>
                   <option value="Ghana">Ghana</option>
@@ -267,7 +275,6 @@ const SignUp = () => {
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       required={formData.role === 'seller'}
                       className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      aria-label="Service category"
                     >
                       <option value="">Select Category</option>
                       <option value="Plumbing">Plumbing</option>
@@ -295,7 +302,6 @@ const SignUp = () => {
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       required={formData.role === 'seller'}
                       className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      aria-label="Address"
                       placeholder="Enter your business address"
                     />
                   </div>
