@@ -58,42 +58,78 @@ const SignUp = () => {
         password: formData.password,
         phone: formData.phone,
         address: formData.address || '',
-        country: formData.country
+        country: formData.country,
+        role: formData.role,
+        ...(formData.role === 'seller' && { category: formData.category })
       };
 
-      const response = await fetch('http://service-api-7ssp.onrender.com/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
+      // Try different CORS proxies
+      const proxies = [
+        'https://cors-anywhere.herokuapp.com/',
+        'https://api.allorigins.win/raw?url=',
+        'https://corsproxy.io/?',
+        '', // Direct (no proxy) - try last
+      ];
 
-      const data = await response.json();
+      let response;
+      let lastError;
 
-      if (!response.ok) {
-        throw new Error(data.message || `Registration failed with status: ${response.status}`);
+      for (const proxy of proxies) {
+        try {
+          const url = `${proxy}https://service-api-7ssp.onrender.com/api/auth/register`;
+          console.log('Trying URL:', url);
+          
+          response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Success!', data);
+            
+            alert('🎉 Registration successful!');
+            
+            login({
+              id: data.user?.id || data.id || Date.now().toString(),
+              name: data.user?.username || data.username || formData.username,
+              email: data.user?.email || data.email || formData.email,
+              phone: data.user?.phone || data.phone || formData.phone,
+              role: formData.role,
+              avatar: data.user?.avatar || data.avatar || '',
+            });
+
+            if (formData.role === 'seller') {
+              navigate('/seller-dashboard');
+            } else {
+              navigate('/dashboard');
+            }
+            return;
+          } else {
+            // If response not ok, try next proxy
+            const errorText = await response.text();
+            console.log(`Proxy ${proxy} failed with status: ${response.status}`, errorText);
+            continue;
+          }
+        } catch (err) {
+          lastError = err;
+          console.log('Proxy failed:', proxy, err);
+          continue;
+        }
       }
 
-      // Success - show alert and redirect
-      alert('🎉 Registration successful!');
-      
-      login({
-        id: data.user?.id || data.id,
-        name: data.user?.username || data.username,
-        email: data.user?.email || data.email,
-        phone: data.user?.phone || data.phone,
-        role: formData.role,
-        avatar: data.user?.avatar || data.avatar || '',
-      });
-
-      if (formData.role === 'seller') {
-        navigate('/seller-dashboard');
+      // If all proxies failed, show appropriate error
+      if (lastError) {
+        throw new Error('Registration failed. Please try again later or check your connection.');
       } else {
-        navigate('/dashboard');
+        throw new Error('Registration failed. Please try again.');
       }
 
     } catch (err) {
+      console.error('Registration error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Something went wrong during registration';
       setError(errorMessage);
     } finally {
