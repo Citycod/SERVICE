@@ -2,11 +2,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Eye, EyeOff,  Lock, AlertCircle, User, Building2 } from 'lucide-react'
+import { Eye, EyeOff, Lock, AlertCircle, User, Building2 } from 'lucide-react'
 
 const Login = () => {
   const [formData, setFormData] = useState({ 
-    username: '', // Changed from email to username
+    username: '',
     password: '',
     userType: 'buyer' as 'buyer' | 'seller'
   })
@@ -27,15 +27,78 @@ const Login = () => {
         throw new Error('Please fill in all fields')
       }
 
-      // Mock API call - replace with actual API call in production
-      // This simulates authentication for both buyers and sellers
-      setTimeout(() => {
-        // Mock user data based on user type
+      // Prepare login data for backend
+      const loginData = {
+        username: formData.username,
+        password: formData.password
+      }
+
+      console.log('Sending login request:', loginData);
+
+      // Real API call to your backend
+      const response = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://service-api-7ssp.onrender.com/api/auth/login')}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData),
+      })
+
+      console.log('Login response status:', response.status);
+
+      // Handle both JSON and text responses
+      let responseData;
+      const responseText = await response.text();
+      
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (parseError) {
+        responseData = { message: responseText };
+      }
+
+      console.log('Login response data:', responseData);
+
+      if (!response.ok) {
+        // Handle specific errors
+        if (responseData.message && responseData.message.includes('Invalid credentials')) {
+          throw new Error('Invalid username or password. Please try again.');
+        } else if (responseData.message && responseData.message.includes('User not found')) {
+          throw new Error('No account found with this username. Please sign up first.');
+        } else {
+          throw new Error(responseData.message || responseData.error || `Login failed with status: ${response.status}`);
+        }
+      }
+
+      // Login successful
+      if (responseData.user) {
+        // Use actual user data from backend
+        const userData = responseData.user;
+        
+        login({
+          id: userData._id || userData.id || Date.now().toString(),
+          name: userData.username || userData.name || formData.username,
+          email: userData.email || '',
+          phone: userData.phone || '',
+          role: userData.role || formData.userType,
+          avatar: userData.avatar || '',
+        });
+
+        // Redirect based on role
+        const userRole = userData.role || formData.userType;
+        const redirectPath = userRole === 'seller' 
+          ? '/seller-dashboard'
+          : '/dashboard';
+        
+        navigate(redirectPath, { replace: true });
+        setSubmitting(false);
+      } else {
+        // If no user data in response, use mock data as fallback
+        console.log('No user data in response, using mock data');
         const mockUser = formData.userType === 'seller' 
           ? {
               id: '2',
-              name: formData.username, // Use username as name for AuthContext
-              email: `${formData.username}@example.com`, // Generate email from username for demo
+              name: formData.username,
+              email: `${formData.username}@example.com`,
               phone: '+1234567890',
               role: 'seller' as const,
               avatar: '',
@@ -47,8 +110,8 @@ const Login = () => {
             }
           : {
               id: '1',
-              name: formData.username, // Use username as name for AuthContext
-              email: `${formData.username}@example.com`, // Generate email from username for demo
+              name: formData.username,
+              email: `${formData.username}@example.com`,
               phone: '+1234567890',
               role: 'buyer' as const,
               avatar: '',
@@ -58,24 +121,23 @@ const Login = () => {
               }
             }
         
-        // Update auth context with user data
-        login(mockUser)
+        login(mockUser);
         
-        // Redirect to appropriate dashboard based on user type
         const redirectPath = formData.userType === 'seller' 
           ? '/seller-dashboard'
-          : '/dashboard'
-        navigate(redirectPath, { replace: true })
-        setSubmitting(false)
-      }, 1000)
+          : '/dashboard';
+        navigate(redirectPath, { replace: true });
+        setSubmitting(false);
+      }
 
     } catch (err: unknown) {
+      console.error('Login error:', err);
       if (err instanceof Error) {
-        setError(err.message || 'An error occurred during login')
+        setError(err.message || 'An error occurred during login');
       } else {
-        setError('An unexpected error occurred')
+        setError('An unexpected error occurred');
       }
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
@@ -161,7 +223,7 @@ const Login = () => {
                 </label>
                 <div className="relative mt-1">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <User className="w-5 h-5 text-gray-400" /> {/* Changed from Mail to User icon */}
+                    <User className="w-5 h-5 text-gray-400" />
                   </div>
                   <input
                     id="username"
@@ -257,10 +319,10 @@ const Login = () => {
 
             {/* Demo Credentials Hint */}
             <div className="p-4 mt-8 rounded-lg bg-gray-50">
-              <h3 className="mb-2 text-sm font-medium text-gray-900">Demo Credentials</h3>
+              <h3 className="mb-2 text-sm font-medium text-gray-900">Login Information</h3>
               <p className="text-xs text-gray-600">
-                For demo purposes, you can use any username and password.
-                The system will automatically log you in as a {formData.userType}.
+                Use the same username and password you registered with. 
+                If you don't have an account, please sign up first.
               </p>
             </div>
           </div>
