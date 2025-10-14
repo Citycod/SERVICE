@@ -33,7 +33,8 @@ const Login = () => {
         password: formData.password
       }
 
-      console.log('Sending login request:', loginData);
+      console.log('🚀 Sending login request with data:', loginData);
+      console.log('📡 API URL:', 'https://service-api-7ssp.onrender.com/api/auth/login');
 
       // Real API call to your backend
       const response = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://service-api-7ssp.onrender.com/api/auth/login')}`, {
@@ -44,21 +45,25 @@ const Login = () => {
         body: JSON.stringify(loginData),
       })
 
-      console.log('Login response status:', response.status);
+      console.log('✅ Response received! Status:', response.status);
+      console.log('✅ Response headers:', Object.fromEntries(response.headers.entries()));
 
       // Handle both JSON and text responses
       let responseData;
       const responseText = await response.text();
+      console.log('📨 Raw response text:', responseText);
       
       try {
         responseData = JSON.parse(responseText);
+        console.log('📊 Parsed JSON response:', responseData);
       } catch (parseError) {
+        console.log('❌ JSON parse error:', parseError);
         responseData = { message: responseText };
+        console.log('📝 Using text response as message:', responseData);
       }
 
-      console.log('Login response data:', responseData);
-
       if (!response.ok) {
+        console.log('❌ Response not OK - throwing error');
         // Handle specific errors
         if (responseData.message && responseData.message.includes('Invalid credentials')) {
           throw new Error('Invalid username or password. Please try again.');
@@ -69,19 +74,25 @@ const Login = () => {
         }
       }
 
+      console.log('🎉 Login successful! Response data:', responseData);
+
       // Login successful
       if (responseData.user) {
+        console.log('👤 User data found in response:', responseData.user);
         // Use actual user data from backend
         const userData = responseData.user;
         
-        login({
+        const userToLogin = {
           id: userData._id || userData.id || Date.now().toString(),
           name: userData.username || userData.name || formData.username,
           email: userData.email || '',
           phone: userData.phone || '',
           role: userData.role || formData.userType,
           avatar: userData.avatar || '',
-        });
+        };
+
+        console.log('🔐 Logging in user:', userToLogin);
+        login(userToLogin);
 
         // Redirect based on role
         const userRole = userData.role || formData.userType;
@@ -89,11 +100,12 @@ const Login = () => {
           ? '/seller-dashboard'
           : '/dashboard';
         
+        console.log('🔄 Redirecting to:', redirectPath);
         navigate(redirectPath, { replace: true });
-        setSubmitting(false);
+        
       } else {
         // If no user data in response, use mock data as fallback
-        console.log('No user data in response, using mock data');
+        console.log('⚠️ No user data in response, using mock data');
         const mockUser = formData.userType === 'seller' 
           ? {
               id: '2',
@@ -121,17 +133,21 @@ const Login = () => {
               }
             }
         
+        console.log('🔐 Logging in with mock user:', mockUser);
         login(mockUser);
         
         const redirectPath = formData.userType === 'seller' 
           ? '/seller-dashboard'
           : '/dashboard';
+        
+        console.log('🔄 Redirecting to:', redirectPath);
         navigate(redirectPath, { replace: true });
-        setSubmitting(false);
       }
 
+      setSubmitting(false);
+
     } catch (err: unknown) {
-      console.error('Login error:', err);
+      console.error('💥 Login error:', err);
       if (err instanceof Error) {
         setError(err.message || 'An error occurred during login');
       } else {
@@ -323,6 +339,9 @@ const Login = () => {
               <p className="text-xs text-gray-600">
                 Use the same username and password you registered with. 
                 If you don't have an account, please sign up first.
+              </p>
+              <p className="mt-2 text-xs text-blue-600">
+                Check the browser console (F12) for detailed login logs.
               </p>
             </div>
           </div>
