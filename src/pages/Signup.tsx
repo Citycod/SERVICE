@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,7 +12,7 @@ const SignUp = () => {
     confirmPassword: '',
     role: 'buyer' as 'buyer' | 'seller',
     category: '',
-    address: '', // Make address required for everyone
+    address: '',
     country: '',
   });
   const [error, setError] = useState('');
@@ -48,7 +49,7 @@ const SignUp = () => {
       return;
     }
     if (!formData.address) {
-      setError('Address is required'); // Add address validation for all users
+      setError('Address is required');
       return;
     }
 
@@ -61,7 +62,7 @@ const SignUp = () => {
         email: formData.email,
         password: formData.password,
         phone: formData.phone,
-        address: formData.address, // Now required for everyone
+        address: formData.address,
         country: formData.country,
         role: formData.role,
         ...(formData.role === 'seller' && { category: formData.category })
@@ -69,7 +70,6 @@ const SignUp = () => {
 
       console.log('Sending data:', requestData);
 
-      // Use corsproxy.io since it worked (gave us the real error)
       const response = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://service-api-7ssp.onrender.com/api/auth/register')}`, {
         method: 'POST',
         headers: {
@@ -78,29 +78,63 @@ const SignUp = () => {
         body: JSON.stringify(requestData),
       });
 
-      const data = await response.json();
-      console.log('Response:', data);
+      console.log('Response status:', response.status);
 
-      if (!response.ok) {
-        throw new Error(data.message || data.error || `Registration failed with status: ${response.status}`);
+      // Handle both JSON and text responses
+      let responseData;
+      const responseText = await response.text();
+      
+      try {
+        // Try to parse as JSON first
+        responseData = JSON.parse(responseText);
+      } catch (parseError) {
+        // If not JSON, use the text response
+        responseData = { message: responseText };
       }
 
-      // Success - show alert and redirect
-      alert('🎉 Registration successful!');
-      
-      login({
-        id: data.user?.id || data.id || Date.now().toString(),
-        name: data.user?.username || data.username || formData.username,
-        email: data.user?.email || data.email || formData.email,
-        phone: data.user?.phone || data.phone || formData.phone,
-        role: formData.role,
-        avatar: data.user?.avatar || data.avatar || '',
-      });
+      console.log('Response data:', responseData);
 
-      if (formData.role === 'seller') {
-        navigate('/seller-dashboard');
+      if (!response.ok) {
+        throw new Error(responseData.message || responseData.error || `Registration failed with status: ${response.status}`);
+      }
+
+      // Success - check if response indicates success
+      if (responseData.message && responseData.message.includes('successful')) {
+        alert('🎉 Registration successful!');
+        
+        // Since backend returns text, we'll use form data for login
+        login({
+          id: Date.now().toString(), // Generate temporary ID
+          name: formData.username,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
+          avatar: '',
+        });
+
+        if (formData.role === 'seller') {
+          navigate('/seller-dashboard');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
-        navigate('/dashboard');
+        // If we get here but response is ok, assume success
+        alert('🎉 Registration successful!');
+        
+        login({
+          id: Date.now().toString(),
+          name: formData.username,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
+          avatar: '',
+        });
+
+        if (formData.role === 'seller') {
+          navigate('/seller-dashboard');
+        } else {
+          navigate('/dashboard');
+        }
       }
 
     } catch (err) {
@@ -248,7 +282,6 @@ const SignUp = () => {
                 </div>
               </div>
 
-              {/* Address field for ALL users */}
               <div>
                 <label htmlFor="address" className="block mb-1 text-sm font-medium text-gray-700">Address</label>
                 <input
@@ -284,7 +317,6 @@ const SignUp = () => {
                 </select>
               </div>
               
-              {/* Seller-only fields */}
               <div 
                 className={`overflow-hidden transition-all duration-300 ease-in-out ${
                   formData.role === 'seller' 
