@@ -37,7 +37,7 @@ const Login = () => {
       console.log('📡 API URL:', 'https://service-api-7ssp.onrender.com/api/auth/login');
 
       // Real API call to your backend
-      const response = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://service-api-7ssp.onrender.com/api/auth/login')}`, {
+      const response = await fetch('https://service-api-7ssp.onrender.com/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,26 +76,39 @@ const Login = () => {
 
       console.log('🎉 Login successful! Response data:', responseData);
 
-      // Login successful
+      // Login successful - ONLY use real backend data
       if (responseData.user) {
         console.log('👤 User data found in response:', responseData.user);
-        // Use actual user data from backend
-        const userData = responseData.user;
         
+        // Transform backend user data to match your frontend format
         const userToLogin = {
-          id: userData._id || userData.id || Date.now().toString(),
-          name: userData.username || userData.name || formData.username,
-          email: userData.email || '',
-          phone: userData.phone || '',
-          role: userData.role || formData.userType,
-          avatar: userData.avatar || '',
+          id: responseData.user._id || responseData.user.id,
+          name: responseData.user.username || responseData.user.name,
+          email: responseData.user.email || '',
+          phone: responseData.user.phone || '',
+          role: responseData.user.role || formData.userType,
+          avatar: responseData.user.avatar || '',
+          // Include any additional fields your app needs
+          ...(responseData.user.role === 'seller' && {
+            companyName: responseData.user.companyName || '',
+            businessType: responseData.user.businessType || '',
+            verified: responseData.user.verified || false,
+            rating: responseData.user.rating || 0,
+            completedProjects: responseData.user.completedProjects || 0
+          }),
+          ...(responseData.user.role === 'buyer' && {
+            preferences: responseData.user.preferences || {
+              notifications: true,
+              newsletter: false
+            }
+          })
         };
 
         console.log('🔐 Logging in user:', userToLogin);
         login(userToLogin);
 
-        // Redirect based on role
-        const userRole = userData.role || formData.userType;
+        // Redirect based on actual role from backend
+        const userRole = responseData.user.role;
         const redirectPath = userRole === 'seller' 
           ? '/seller-dashboard'
           : '/dashboard';
@@ -104,44 +117,9 @@ const Login = () => {
         navigate(redirectPath, { replace: true });
         
       } else {
-        // If no user data in response, use mock data as fallback
-        console.log('⚠️ No user data in response, using mock data');
-        const mockUser = formData.userType === 'seller' 
-          ? {
-              id: '2',
-              name: formData.username,
-              email: `${formData.username}@example.com`,
-              phone: '+1234567890',
-              role: 'seller' as const,
-              avatar: '',
-              companyName: 'Smith Construction',
-              businessType: 'contractor',
-              verified: true,
-              rating: 4.8,
-              completedProjects: 47
-            }
-          : {
-              id: '1',
-              name: formData.username,
-              email: `${formData.username}@example.com`,
-              phone: '+1234567890',
-              role: 'buyer' as const,
-              avatar: '',
-              preferences: {
-                notifications: true,
-                newsletter: false
-              }
-            }
-        
-        console.log('🔐 Logging in with mock user:', mockUser);
-        login(mockUser);
-        
-        const redirectPath = formData.userType === 'seller' 
-          ? '/seller-dashboard'
-          : '/dashboard';
-        
-        console.log('🔄 Redirecting to:', redirectPath);
-        navigate(redirectPath, { replace: true });
+        // If no user data in response, throw error
+        console.error('❌ No user data received from backend');
+        throw new Error('Login successful but no user data received. Please try again.');
       }
 
       setSubmitting(false);
