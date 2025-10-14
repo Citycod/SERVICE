@@ -34,46 +34,54 @@ const Login = () => {
       }
 
       console.log('🚀 Sending login request with data:', loginData);
-      console.log('📡 API URL:', 'https://service-api-7ssp.onrender.com/api/auth/login');
 
-      // Real API call to your backend
-      const response = await fetch('https://service-api-7ssp.onrender.com/api/auth/login', {
+      // Solution: Use a CORS proxy or fix the request
+      const apiUrl = 'https://service-api-7ssp.onrender.com/api/auth/login';
+      
+      // Try different approaches:
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Add Origin header to match what backend expects
+          'Origin': 'https://service-two-sand.vercel.app'
         },
+        mode: 'cors', // Explicitly set cors mode
+        credentials: 'include', // Include credentials if needed
         body: JSON.stringify(loginData),
       })
 
       console.log('✅ Response received! Status:', response.status);
-      console.log('✅ Response headers:', Object.fromEntries(response.headers.entries()));
-
-      // Handle both JSON and text responses
-      let responseData;
-      const responseText = await response.text();
-      console.log('📨 Raw response text:', responseText);
-      
-      try {
-        responseData = JSON.parse(responseText);
-        console.log('📊 Parsed JSON response:', responseData);
-      } catch (parseError) {
-        console.log('❌ JSON parse error:', parseError);
-        responseData = { message: responseText };
-        console.log('📝 Using text response as message:', responseData);
-      }
 
       if (!response.ok) {
-        console.log('❌ Response not OK - throwing error');
+        // Try to get error message from response
+        let errorMessage = `Login failed with status: ${response.status}`;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          // If response is not JSON, try to get text
+          try {
+            const errorText = await response.text();
+            if (errorText) errorMessage = errorText;
+          } catch (textError) {
+            // Ignore text parsing errors
+          }
+        }
+
         // Handle specific errors
-        if (responseData.message && responseData.message.includes('Invalid credentials')) {
+        if (errorMessage.includes('Invalid credentials')) {
           throw new Error('Invalid username or password. Please try again.');
-        } else if (responseData.message && responseData.message.includes('User not found')) {
+        } else if (errorMessage.includes('User not found')) {
           throw new Error('No account found with this username. Please sign up first.');
         } else {
-          throw new Error(responseData.message || responseData.error || `Login failed with status: ${response.status}`);
+          throw new Error(errorMessage);
         }
       }
 
+      // Parse successful response
+      const responseData = await response.json();
       console.log('🎉 Login successful! Response data:', responseData);
 
       // Login successful - ONLY use real backend data
@@ -122,15 +130,18 @@ const Login = () => {
         throw new Error('Login successful but no user data received. Please try again.');
       }
 
-      setSubmitting(false);
-
     } catch (err: unknown) {
       console.error('💥 Login error:', err);
-      if (err instanceof Error) {
+      
+      // Handle CORS errors specifically
+      if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+        setError('Network error: Cannot connect to server. Please check your connection or try again later.');
+      } else if (err instanceof Error) {
         setError(err.message || 'An error occurred during login');
       } else {
         setError('An unexpected error occurred');
       }
+    } finally {
       setSubmitting(false);
     }
   }
@@ -311,15 +322,12 @@ const Login = () => {
               </div>
             </form>
 
-            {/* Demo Credentials Hint */}
-            <div className="p-4 mt-8 rounded-lg bg-gray-50">
-              <h3 className="mb-2 text-sm font-medium text-gray-900">Login Information</h3>
-              <p className="text-xs text-gray-600">
-                Use the same username and password you registered with. 
-                If you don't have an account, please sign up first.
-              </p>
-              <p className="mt-2 text-xs text-blue-600">
-                Check the browser console (F12) for detailed login logs.
+            {/* CORS Troubleshooting Info */}
+            <div className="p-4 mt-8 rounded-lg bg-yellow-50">
+              <h3 className="mb-2 text-sm font-medium text-yellow-800">Troubleshooting</h3>
+              <p className="text-xs text-yellow-700">
+                If you're experiencing CORS errors, this is a backend configuration issue. 
+                Please ensure your backend allows requests from: <code className="px-1 bg-yellow-100 rounded">https://service-two-sand.vercel.app</code>
               </p>
             </div>
           </div>
