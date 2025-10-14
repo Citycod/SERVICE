@@ -11,7 +11,7 @@ const SignUp = () => {
     confirmPassword: '',
     role: 'buyer' as 'buyer' | 'seller',
     category: '',
-    address: '',
+    address: '', // Make address required for everyone
     country: '',
   });
   const [error, setError] = useState('');
@@ -47,6 +47,10 @@ const SignUp = () => {
       setError('Country is required');
       return;
     }
+    if (!formData.address) {
+      setError('Address is required'); // Add address validation for all users
+      return;
+    }
 
     setError('');
     setSubmitting(true);
@@ -57,75 +61,46 @@ const SignUp = () => {
         email: formData.email,
         password: formData.password,
         phone: formData.phone,
-        address: formData.address || '',
+        address: formData.address, // Now required for everyone
         country: formData.country,
         role: formData.role,
         ...(formData.role === 'seller' && { category: formData.category })
       };
 
-      // Try different CORS proxies
-      const proxies = [
-        'https://cors-anywhere.herokuapp.com/',
-        'https://api.allorigins.win/raw?url=',
-        'https://corsproxy.io/?',
-        '', // Direct (no proxy) - try last
-      ];
+      console.log('Sending data:', requestData);
 
-      let response;
-      let lastError;
+      // Use corsproxy.io since it worked (gave us the real error)
+      const response = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://service-api-7ssp.onrender.com/api/auth/register')}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
 
-      for (const proxy of proxies) {
-        try {
-          const url = `${proxy}https://service-api-7ssp.onrender.com/api/auth/register`;
-          console.log('Trying URL:', url);
-          
-          response = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData),
-          });
+      const data = await response.json();
+      console.log('Response:', data);
 
-          if (response.ok) {
-            const data = await response.json();
-            console.log('Success!', data);
-            
-            alert('🎉 Registration successful!');
-            
-            login({
-              id: data.user?.id || data.id || Date.now().toString(),
-              name: data.user?.username || data.username || formData.username,
-              email: data.user?.email || data.email || formData.email,
-              phone: data.user?.phone || data.phone || formData.phone,
-              role: formData.role,
-              avatar: data.user?.avatar || data.avatar || '',
-            });
-
-            if (formData.role === 'seller') {
-              navigate('/seller-dashboard');
-            } else {
-              navigate('/dashboard');
-            }
-            return;
-          } else {
-            // If response not ok, try next proxy
-            const errorText = await response.text();
-            console.log(`Proxy ${proxy} failed with status: ${response.status}`, errorText);
-            continue;
-          }
-        } catch (err) {
-          lastError = err;
-          console.log('Proxy failed:', proxy, err);
-          continue;
-        }
+      if (!response.ok) {
+        throw new Error(data.message || data.error || `Registration failed with status: ${response.status}`);
       }
 
-      // If all proxies failed, show appropriate error
-      if (lastError) {
-        throw new Error('Registration failed. Please try again later or check your connection.');
+      // Success - show alert and redirect
+      alert('🎉 Registration successful!');
+      
+      login({
+        id: data.user?.id || data.id || Date.now().toString(),
+        name: data.user?.username || data.username || formData.username,
+        email: data.user?.email || data.email || formData.email,
+        phone: data.user?.phone || data.phone || formData.phone,
+        role: formData.role,
+        avatar: data.user?.avatar || data.avatar || '',
+      });
+
+      if (formData.role === 'seller') {
+        navigate('/seller-dashboard');
       } else {
-        throw new Error('Registration failed. Please try again.');
+        navigate('/dashboard');
       }
 
     } catch (err) {
@@ -273,6 +248,20 @@ const SignUp = () => {
                 </div>
               </div>
 
+              {/* Address field for ALL users */}
+              <div>
+                <label htmlFor="address" className="block mb-1 text-sm font-medium text-gray-700">Address</label>
+                <input
+                  id="address"
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  required
+                  className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your address"
+                />
+              </div>
+
               <div>
                 <label htmlFor="country" className="block mb-1 text-sm font-medium text-gray-700">Country</label>
                 <select
@@ -295,6 +284,7 @@ const SignUp = () => {
                 </select>
               </div>
               
+              {/* Seller-only fields */}
               <div 
                 className={`overflow-hidden transition-all duration-300 ease-in-out ${
                   formData.role === 'seller' 
@@ -304,7 +294,7 @@ const SignUp = () => {
               >
                 <div className={`space-y-4 pt-4 ${isTransitioning ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}>
                   <div>
-                    <label htmlFor="category" className="block mb-1 text-sm font-medium text-gray-700">Category</label>
+                    <label htmlFor="category" className="block mb-1 text-sm font-medium text-gray-700">Business Category</label>
                     <select
                       id="category"
                       value={formData.category}
@@ -328,18 +318,6 @@ const SignUp = () => {
                       <option value="Cleaning">Cleaning</option>
                       <option value="Pest Control">Pest Control</option>
                     </select>
-                  </div>
-                  <div>
-                    <label htmlFor="address" className="block mb-1 text-sm font-medium text-gray-700">Address</label>
-                    <input
-                      id="address"
-                      type="text"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      required={formData.role === 'seller'}
-                      className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter your business address"
-                    />
                   </div>
                 </div>
               </div>
