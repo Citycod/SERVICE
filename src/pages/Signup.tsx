@@ -68,9 +68,10 @@ const SignUp = () => {
         ...(formData.role === 'seller' && { category: formData.category })
       };
 
-      console.log('Sending data:', requestData);
+      console.log('🚀 Sending registration data:', requestData);
+      console.log('📡 Direct API URL: https://service-api-7ssp.onrender.com/api/auth/register');
 
-      const response = await fetch(`https://corsproxy.io/?${encodeURIComponent('https://service-api-7ssp.onrender.com/api/auth/register')}`, {
+      const response = await fetch('https://service-api-7ssp.onrender.com/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,69 +79,66 @@ const SignUp = () => {
         body: JSON.stringify(requestData),
       });
 
-      console.log('Response status:', response.status);
+      console.log('✅ Response status:', response.status);
 
-      // Handle both JSON and text responses
       let responseData;
       const responseText = await response.text();
       
       try {
-        // Try to parse as JSON first
         responseData = JSON.parse(responseText);
+        console.log('📊 Parsed JSON response:', responseData);
       } catch (parseError) {
-        // If not JSON, use the text response
+        console.log('📝 Raw response text:', responseText);
         responseData = { message: responseText };
       }
 
-      console.log('Response data:', responseData);
-
       if (!response.ok) {
+        // Handle specific MongoDB duplicate key errors
+        if (responseData.message && responseData.message.includes('duplicate key error')) {
+          if (responseData.message.includes('phone_1')) {
+            throw new Error('This phone number is already registered. Please use a different phone number or login.');
+          } else if (responseData.message.includes('email_1')) {
+            throw new Error('This email is already registered. Please use a different email or login.');
+          } else if (responseData.message.includes('username_1')) {
+            throw new Error('This username is already taken. Please choose a different username.');
+          } else {
+            throw new Error('This account already exists. Please login or use different information.');
+          }
+        }
         throw new Error(responseData.message || responseData.error || `Registration failed with status: ${response.status}`);
       }
 
-      // Success - check if response indicates success
-      if (responseData.message && responseData.message.includes('successful')) {
-        alert('🎉 Registration successful!');
-        
-        // Since backend returns text, we'll use form data for login
-        login({
-          id: Date.now().toString(), // Generate temporary ID
-          name: formData.username,
-          email: formData.email,
-          phone: formData.phone,
-          role: formData.role,
-          avatar: '',
-        });
+      console.log('🎉 Registration successful!');
 
-        if (formData.role === 'seller') {
-          navigate('/seller-dashboard');
-        } else {
-          navigate('/dashboard');
-        }
+      // Success - show alert and redirect
+      alert('🎉 Registration successful!');
+      
+      // Use the data from the response if available, otherwise use form data
+      login({
+        id: responseData.user?.id || responseData.id || Date.now().toString(),
+        name: responseData.user?.username || responseData.username || formData.username,
+        email: responseData.user?.email || responseData.email || formData.email,
+        phone: responseData.user?.phone || responseData.phone || formData.phone,
+        role: formData.role,
+        avatar: responseData.user?.avatar || responseData.avatar || '',
+      });
+
+      if (formData.role === 'seller') {
+        navigate('/seller-dashboard');
       } else {
-        // If we get here but response is ok, assume success
-        alert('🎉 Registration successful!');
-        
-        login({
-          id: Date.now().toString(),
-          name: formData.username,
-          email: formData.email,
-          phone: formData.phone,
-          role: formData.role,
-          avatar: '',
-        });
-
-        if (formData.role === 'seller') {
-          navigate('/seller-dashboard');
-        } else {
-          navigate('/dashboard');
-        }
+        navigate('/dashboard');
       }
 
     } catch (err) {
-      console.error('Registration error:', err);
+      console.error('💥 Registration error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Something went wrong during registration';
-      setError(errorMessage);
+      
+      // Handle CORS errors specifically
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        setError('Cannot connect to the server. Please check your internet connection and try again. If the problem persists, the server might be down.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -241,6 +239,7 @@ const SignUp = () => {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
                     className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="your@email.com"
                   />
                 </div>
                 <div>
@@ -267,6 +266,7 @@ const SignUp = () => {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
                     className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="At least 6 characters"
                   />
                 </div>
                 <div>
@@ -278,6 +278,7 @@ const SignUp = () => {
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     required
                     className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Confirm your password"
                   />
                 </div>
               </div>
