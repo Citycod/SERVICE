@@ -83,8 +83,8 @@ const SignUp = () => {
       for (const proxyUrl of proxyUrls) {
         try {
           const url = proxyUrl ? 
-            `${proxyUrl}https://service-api-7ssp.onrender.com//api/auth/register` :
-            'https://service-api-7ssp.onrender.com//api/auth/register';
+            `${proxyUrl}https://service-api-7ssp.onrender.com/api/auth/register` :
+            'https://service-api-7ssp.onrender.com/api/auth/register';
           
           console.log(`📡 Trying URL: ${url}`);
 
