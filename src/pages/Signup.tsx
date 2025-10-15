@@ -69,9 +69,14 @@ const SignUp = () => {
       };
 
       console.log('🚀 Sending registration data:', requestData);
-      console.log('📡 Direct API URL: https://service-api-7ssp.onrender.com/api/auth/register');
 
-      const response = await fetch('https://service-api-7ssp.onrender.com/api/auth/register', {
+      // Simple CORS proxy approach
+      const proxyUrl = 'https://api.allorigins.win/raw?url=';
+      const targetUrl = 'https://service-api-7ssp.onrender.com/api/auth/register';
+      
+      console.log('📡 Using CORS proxy:', proxyUrl + encodeURIComponent(targetUrl));
+
+      const response = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -132,13 +137,7 @@ const SignUp = () => {
     } catch (err) {
       console.error('💥 Registration error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Something went wrong during registration';
-      
-      // Handle CORS errors specifically
-      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-        setError('Cannot connect to the server. Please check your internet connection and try again. If the problem persists, the server might be down.');
-      } else {
-        setError(errorMessage);
-      }
+      setError(errorMessage);
     } finally {
       setSubmitting(false);
     }
