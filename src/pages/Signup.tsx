@@ -79,7 +79,6 @@ const SignUp = () => {
       ];
 
       let response;
-      let lastError;
 
       for (const proxyUrl of proxyUrls) {
         try {
@@ -143,7 +142,6 @@ const SignUp = () => {
           }
         } catch (err) {
           console.log(`💥 ${proxyUrl || 'direct'} error:`, err);
-          lastError = err;
           continue;
         }
       }
