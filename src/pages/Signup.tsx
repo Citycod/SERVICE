@@ -72,6 +72,7 @@ const SignUp = () => {
 
       const response = await fetch('https://service-api-7ssp.onrender.com/api/auth/register', {
         method: 'POST',
+        mode: 'cors', // Explicitly set CORS mode
         headers: {
           'Content-Type': 'application/json',
         },
@@ -84,7 +85,6 @@ const SignUp = () => {
         const responseData = await response.json();
         console.log('🎉 Registration successful!', responseData);
 
-        // Success - show alert and redirect
         alert('🎉 Registration successful!');
         
         login({
@@ -117,7 +117,8 @@ const SignUp = () => {
 
     } catch (err) {
       console.error('💥 Registration error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Something went wrong during registration';
+      const errorMessage = err instanceof Error ? 
+        err.message : 'Something went wrong during registration';
       setError(errorMessage);
     } finally {
       setSubmitting(false);
