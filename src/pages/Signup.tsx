@@ -70,7 +70,7 @@ const SignUp = () => {
 
       console.log('🚀 Sending registration data:', requestData);
 
-      const response = await fetch('https://service-api-7ssp.onrender.com/api/auth/register', {
+      const response = await fetch('https://service-api-7ssp.onrender.com/api/auth/register',{
         method: 'POST',
         mode: 'cors', // Explicitly set CORS mode
         headers: {
@@ -387,5 +387,6 @@ const SignUp = () => {
     </div>
   );
 };
+
 
 export default SignUp;
