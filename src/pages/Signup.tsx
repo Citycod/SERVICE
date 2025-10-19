@@ -70,87 +70,53 @@ const SignUp = () => {
 
       console.log('🚀 Sending registration data:', requestData);
 
-      // Try different CORS proxy URLs
-      const proxyUrls = [
-        'https://cors-proxy.htmldriven.com/?url=',
-        'https://proxy.cors.sh/',
-        'https://cors.bridged.cc/',
-        '' // Direct (will fail due to CORS, but let's try)
-      ];
+      const response = await fetch('https://service-api-7ssp.onrender.com/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
 
-      let response;
+      console.log('📊 Response status:', response.status);
 
-      for (const proxyUrl of proxyUrls) {
-        try {
-          const url = proxyUrl ? 
-            `${proxyUrl}https://service-api-7ssp.onrender.com/api/auth/register` :
-            'https://service-api-7ssp.onrender.com/api/auth/register';
-          
-          console.log(`📡 Trying URL: ${url}`);
+      if (response.ok) {
+        const responseData = await response.json();
+        console.log('🎉 Registration successful!', responseData);
 
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        // Success - show alert and redirect
+        alert('🎉 Registration successful!');
+        
+        login({
+          id: responseData.user?.id || responseData.id || Date.now().toString(),
+          name: responseData.user?.username || responseData.username || formData.username,
+          email: responseData.user?.email || responseData.email || formData.email,
+          phone: responseData.user?.phone || responseData.phone || formData.phone,
+          role: formData.role,
+          avatar: responseData.user?.avatar || responseData.avatar || '',
+        });
 
-          response = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData),
-            signal: controller.signal
-          });
-
-          clearTimeout(timeoutId);
-
-          console.log(`✅ Response status from ${proxyUrl || 'direct'}:`, response.status);
-
-          if (response.ok) {
-            let responseData;
-            const responseText = await response.text();
-            
-            try {
-              responseData = JSON.parse(responseText);
-              console.log('📊 Parsed JSON response:', responseData);
-            } catch (parseError) {
-              console.log('📝 Raw response text:', responseText);
-              responseData = { message: responseText };
-            }
-
-            console.log('🎉 Registration successful!');
-
-            // Success - show alert and redirect
-            alert('🎉 Registration successful!');
-            
-            login({
-              id: responseData.user?.id || responseData.id || Date.now().toString(),
-              name: responseData.user?.username || responseData.username || formData.username,
-              email: responseData.user?.email || responseData.email || formData.email,
-              phone: responseData.user?.phone || responseData.phone || formData.phone,
-              role: formData.role,
-              avatar: responseData.user?.avatar || responseData.avatar || '',
-            });
-
-            if (formData.role === 'seller') {
-              navigate('/seller-dashboard');
-            } else {
-              navigate('/dashboard');
-            }
-            return;
-          } else {
-            console.log(`❌ ${proxyUrl || 'direct'} failed with status: ${response.status}`);
-            continue;
-          }
-        } catch (err) {
-          console.log(`💥 ${proxyUrl || 'direct'} error:`, err);
-          continue;
+        if (formData.role === 'seller') {
+          navigate('/seller-dashboard');
+        } else {
+          navigate('/dashboard');
         }
+      } else {
+        const errorText = await response.text();
+        let errorMessage = 'Registration failed';
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          errorMessage = errorText || `Server error: ${response.status}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      // If all proxies failed
-      throw new Error('Unable to connect to registration service. Please try again later.');
-
     } catch (err) {
-      console.error('💥 Final registration error:', err);
+      console.error('💥 Registration error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Something went wrong during registration';
       setError(errorMessage);
     } finally {
