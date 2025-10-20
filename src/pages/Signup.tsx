@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { BASE_URL } from "../utils/url";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -82,17 +83,14 @@ const SignUp = () => {
 
       console.log("🚀 Sending registration data:", requestData);
 
-      const response = await fetch(
-        "https://service-api-7ssp.onrender.com/api/auth/register",
-        {
-          method: "POST",
-          mode: "cors", // Explicitly set CORS mode
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestData),
-        }
-      );
+      const response = await fetch(`${BASE_URL}api/auth/register`, {
+        method: "POST",
+        mode: "cors", // Explicitly set CORS mode
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
 
       console.log("📊 Response status:", response.status);
 
