@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Lock, AlertCircle, User, Building2 } from 'lucide-react';
+import { BASE_URL } from '../utils/url';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -35,10 +36,10 @@ const Login = () => {
       console.log('🚀 Sending login request with data:', loginData);
 
       const response = await fetch(
-        `https://service-api-7ssp.onrender.com/api/auth/login`,
+        `${BASE_URL}api/auth/login`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(loginData),
         }
       );
