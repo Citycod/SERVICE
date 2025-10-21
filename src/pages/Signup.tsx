@@ -57,14 +57,23 @@ const SignUp = () => {
       return;
     }
 
-    // Validate phone number format
-    const phoneRegex = /^\+\d{1,4}\s?\d{3,15}(\s?\d{3}){2,3}$/;
-    if (!phoneRegex.test(formData.phone)) {
+    // Validate phone number format: allow local (0XXXXXXXXX) or international (+233...)
+    const localGhanaPhone = /^0\d{9}$/; // e.g., 0123456789
+    const internationalPhone = /^\+\d{7,15}$/; // basic E.164 check
+    if (
+      !localGhanaPhone.test(formData.phone) &&
+      !internationalPhone.test(formData.phone)
+    ) {
       setError(
-        "Please enter a valid phone number with country code (e.g., +233123456789)"
+        "Please enter a valid phone number (e.g., 0557894646 or +233557894646)"
       );
       return;
     }
+
+    // Normalize phone to E.164 (+233) if user entered local Ghana format
+    const normalizedPhone = localGhanaPhone.test(formData.phone)
+      ? `+233${formData.phone.slice(1)}`
+      : formData.phone;
 
     setError("");
     setSubmitting(true);
@@ -74,7 +83,7 @@ const SignUp = () => {
         username: formData.username,
         email: formData.email,
         password: formData.password,
-        phone: formData.phone,
+        phone: normalizedPhone,
         address: formData.address,
         country: formData.country,
         role: formData.role,
@@ -238,7 +247,7 @@ const SignUp = () => {
                   htmlFor="username"
                   className="block mb-1 text-sm font-medium text-gray-700"
                 >
-                  Username
+                  Full Name
                 </label>
                 <input
                   id="username"
@@ -249,7 +258,7 @@ const SignUp = () => {
                   }
                   required
                   className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Choose a username"
+                  placeholder="Enter your full name"
                 />
               </div>
 
@@ -289,7 +298,7 @@ const SignUp = () => {
                     }
                     required
                     className="w-full p-3 transition-colors duration-300 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="+233572558822"
+                    placeholder="0533456789"
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     Include country code (e.g., +233 for Ghana)
