@@ -2,12 +2,13 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { 
-  Upload, 
-  
-  X, 
-   
-  Tag, 
+import { supabase } from '../utils/supabase'
+import {
+  Upload,
+
+  X,
+
+  Tag,
   MapPin,
   AlertCircle,
   Plus,
@@ -42,7 +43,7 @@ const CreateService = () => {
           <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
           <h2 className="mb-2 text-2xl font-bold text-gray-900">Access Denied</h2>
           <p className="mb-4 text-gray-600">Only verified sellers can create services.</p>
-          <button 
+          <button
             onClick={() => navigate('/seller-dashboard')}
             className="btn btn-primary"
           >
@@ -123,7 +124,7 @@ const CreateService = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Validation
     if (!formData.title || !formData.category || !formData.price || !formData.deliveryTime) {
       setError('Please fill out all required fields')
@@ -143,29 +144,67 @@ const CreateService = () => {
     setError('')
     setSubmitting(true)
 
-    // Mock API call with FormData for file uploads
-    const submitData = new FormData()
-    submitData.append('title', formData.title)
-    submitData.append('category', formData.category)
-    submitData.append('subcategory', formData.subcategory)
-    submitData.append('description', formData.description)
-    submitData.append('price', formData.price)
-    submitData.append('deliveryTime', `${formData.deliveryTime} ${formData.deliveryType}`)
-    submitData.append('location', formData.location)
-    submitData.append('tags', JSON.stringify(formData.tags))
-    submitData.append('requirements', JSON.stringify(formData.requirements.filter(req => req.trim())))
-    
-    images.forEach(image => {
-      submitData.append('images', image)
-    })
+    try {
+      // Upload images to Supabase Storage
+      const imageUrls: string[] = []
 
-    // Simulate API call
-    setTimeout(() => {
-      setSubmitting(false)
-      navigate('/manage-services', { 
-        state: { message: 'Service created successfully!' }
+      for (const image of images) {
+        const fileExt = image.name.split('.').pop()
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+
+        const { data: uploadData, error: uploadError } = await supabase
+          .storage
+          .from('service-images')
+          .upload(fileName, image)
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError)
+          // If storage bucket doesn't exist, use placeholder
+          imageUrls.push('https://images.unsplash.com/photo-1581578731548-c64695cc6952?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80')
+        } else {
+          const { data: urlData } = supabase
+            .storage
+            .from('service-images')
+            .getPublicUrl(uploadData.path)
+
+          imageUrls.push(urlData.publicUrl)
+        }
+      }
+
+      // Create service in database
+      const deliveryTimeString = `${formData.deliveryTime} ${formData.deliveryType}`
+
+      const { data: serviceData, error: serviceError } = await supabase
+        .from('services')
+        .insert({
+          seller_id: user.id,
+          title: formData.title,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          category: formData.subcategory || formData.category,
+          delivery_time: deliveryTimeString,
+          images: imageUrls,
+          tags: formData.tags,
+          requirements: formData.requirements.filter(req => req.trim()),
+          status: 'pending', // Will need admin approval
+          location: formData.location || null
+        })
+        .select()
+        .single()
+
+      if (serviceError) throw serviceError
+
+      console.log('Service created:', serviceData)
+
+      navigate('/manage-services', {
+        state: { message: 'Service created successfully! It will be visible once approved by admin.' }
       })
-    }, 2000)
+    } catch (err: any) {
+      console.error('Error creating service:', err)
+      setError(err.message || 'Failed to create service. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (

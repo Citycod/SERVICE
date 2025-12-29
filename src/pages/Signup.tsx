@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { BASE_URL } from "../utils/url";
+// import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../utils/supabase";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -19,7 +19,11 @@ const SignUp = () => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const { login } = useAuth();
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // Modal state
+  // toggleLogin is not exposed by AuthContext based on previous reads, but login is.
+  // We might not need to call login manually as AuthContext listens to auth state changes.
+  // But for better UX we might want to ensure state is updated.
+  // const { login } = useAuth(); // Unused in new flow
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const roleFromQuery = searchParams.get("role") || "buyer";
@@ -79,73 +83,55 @@ const SignUp = () => {
     setSubmitting(true);
 
     try {
-      const requestData = {
-        username: formData.username,
+      // 1. Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        phone: normalizedPhone,
-        address: formData.address,
-        country: formData.country,
-        role: formData.role,
-        ...(formData.role === "seller" && { category: formData.category }),
-      };
-
-      console.log("🚀 Sending registration data:", requestData);
-
-      const response = await fetch(`${BASE_URL}api/auth/register`, {
-        method: "POST",
-        mode: "cors", // Explicitly set CORS mode
-        headers: {
-          "Content-Type": "application/json",
+        options: {
+          data: {
+            full_name: formData.username,
+            role: formData.role,
+            avatar_url: '',
+          },
         },
-        body: JSON.stringify(requestData),
       });
 
-      console.log("📊 Response status:", response.status);
+      if (authError) throw authError;
 
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log("🎉 Registration successful!", responseData);
+      if (authData.user) {
+        // 2. Update additional profile details that aren't handled by the initial trigger
+        // The trigger handles id, email, full_name, avatar_url, and role.
+        // We need to add phone, location, and category.
 
-        alert("🎉 Registration successful!");
+        const location = `${formData.address}, ${formData.country}`;
 
-        login({
-          id: responseData.user?.id || responseData.id || Date.now().toString(),
-          name:
-            responseData.user?.username ||
-            responseData.username ||
-            formData.username,
-          email:
-            responseData.user?.email || responseData.email || formData.email,
-          phone:
-            responseData.user?.phone || responseData.phone || formData.phone,
-          role: formData.role,
-          avatar: responseData.user?.avatar || responseData.avatar || "",
-        });
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            phone: normalizedPhone,
+            location: location,
+            category: formData.role === 'seller' ? formData.category : null
+          })
+          .eq('id', authData.user.id);
 
-        if (formData.role === "seller") {
-          navigate("/seller-dashboard");
-        } else {
-          navigate("/dashboard");
+        if (updateError) {
+          console.error("Error updating profile details:", updateError);
         }
+
+        console.log("🎉 Registration successful!");
+        setSubmitting(false);
+        setShowSuccessModal(true);
+
+        // Auto redirect to login after 5 seconds
+        setTimeout(() => {
+          navigate("/login");
+        }, 5000);
+
       } else {
-        let errorMessage = "Registration failed";
-
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (parseError) {
-          // If JSON parsing fails, try to get text response
-          try {
-            const errorText = await response.text();
-            errorMessage = errorText || `Server error: ${response.status}`;
-          } catch {
-            errorMessage = `Server error: ${response.status}`;
-          }
-        }
-
-        throw new Error(errorMessage);
+        // Should rarely happen if no error
+        throw new Error("Registration completed but no user returned.");
       }
+
     } catch (err) {
       console.error("💥 Registration error:", err);
       const errorMessage =
@@ -153,32 +139,59 @@ const SignUp = () => {
           ? err.message
           : "Something went wrong during registration";
       setError(errorMessage);
-    } finally {
       setSubmitting(false);
     }
   };
 
-  const handleGoogleSignUp = () => {
-    setTimeout(() => {
-      login({
-        id: "2",
-        name: formData.username || "Google User",
-        email: formData.email,
-        phone: formData.phone,
-        role: formData.role,
-        avatar: "",
+  const handleGoogleSignUp = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`, // We'll handle routing in the dashboard component/auth guard
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
       });
-
-      if (formData.role === "seller") {
-        navigate("/seller-dashboard");
-      } else {
-        navigate("/dashboard");
-      }
-    }, 1000);
+      if (error) throw error;
+    } catch (error) {
+      console.error('Google Sign Up Error:', error);
+      setError('Failed to sign up with Google');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 relative">
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all scale-100">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Registration Successful!</h3>
+              <p className="text-gray-600 mb-6">
+                Please check your email inbox to verify your account. You will be redirected to the login page in a few seconds.
+              </p>
+              <button
+                onClick={() => navigate("/login")}
+                className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Go to Login Now
+              </button>
+            </div>
+            <div className="bg-gray-50 px-6 py-3 text-sm text-center text-gray-500">
+              Didn't receive the email? Check your spam folder.
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container flex flex-col items-center justify-between px-4 py-12 mx-auto lg:flex-row">
         <div className="w-full mb-10 lg:w-1/2 lg:mb-0">
           <div className="relative">
@@ -219,22 +232,20 @@ const SignUp = () => {
                 <button
                   type="button"
                   onClick={() => handleRoleChange("buyer")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-300 ${
-                    formData.role === "buyer"
-                      ? "bg-white text-blue-600 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-300 ${formData.role === "buyer"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                    }`}
                 >
                   Customer
                 </button>
                 <button
                   type="button"
                   onClick={() => handleRoleChange("seller")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-300 ${
-                    formData.role === "seller"
-                      ? "bg-white text-blue-600 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-300 ${formData.role === "seller"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                    }`}
                 >
                   Vendor
                 </button>
@@ -400,18 +411,16 @@ const SignUp = () => {
               </div>
 
               <div
-                className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                  formData.role === "seller"
-                    ? "max-h-96 opacity-100"
-                    : "max-h-0 opacity-0"
-                }`}
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${formData.role === "seller"
+                  ? "max-h-96 opacity-100"
+                  : "max-h-0 opacity-0"
+                  }`}
               >
                 <div
-                  className={`space-y-4 pt-4 ${
-                    isTransitioning
-                      ? "opacity-0"
-                      : "opacity-100 transition-opacity duration-300"
-                  }`}
+                  className={`space-y-4 pt-4 ${isTransitioning
+                    ? "opacity-0"
+                    : "opacity-100 transition-opacity duration-300"
+                    }`}
                 >
                   <div>
                     <label

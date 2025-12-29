@@ -2,20 +2,19 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Lock, AlertCircle, User, Building2 } from 'lucide-react';
-import { BASE_URL } from '../utils/url';
+import { supabase } from '../utils/supabase';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    username: '', // This will be treated as email
     password: '',
     userType: 'buyer' as 'buyer' | 'seller',
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  // const { login } = useAuth(); // removed unused
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,50 +27,47 @@ const Login = () => {
         throw new Error('Please fill in all fields');
       }
 
-      const loginData = {
-        username: formData.username,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.username,
         password: formData.password,
-      };
+      });
 
-      console.log('🚀 Sending login request with data:', loginData);
+      if (error) {
+        throw error;
+      }
 
-      const response = await fetch(
-        `${BASE_URL}api/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(loginData),
+      console.log('✅ Supabase Login successful', data);
+
+      // Fetch user profile to get role
+      if (data.user) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, is_banned')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          navigate('/dashboard');
+          return;
         }
-      );
 
-      const data = await response.json();
-      console.log('✅ API response:', data);
+        // Check if user is banned
+        if (profile?.is_banned) {
+          await supabase.auth.signOut();
+          throw new Error('Your account has been suspended. Please contact support.');
+        }
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed. Please check credentials.');
+        // Redirect based on role
+        const dashboardMap: Record<string, string> = {
+          admin: '/admin',
+          seller: '/seller-dashboard',
+          buyer: '/dashboard'
+        };
+
+        navigate(dashboardMap[profile?.role] || '/dashboard');
       }
 
-      if (!data.user) {
-        throw new Error('Invalid response from server: user data missing.');
-      }
-
-      // Store user using context
-      const user = {
-        id: data.user._id || data.user.id,
-        name: data.user.username || data.user.name,
-        email: data.user.email || '',
-        phone: data.user.phone || '',
-        role: data.user.role || formData.userType,
-        avatar: data.user.avatar || '',
-      };
-
-      login(user);
-
-      // Redirect user based on role
-      const redirectPath =
-        user.role === 'seller' ? '/seller-dashboard' : '/dashboard';
-
-      navigate(redirectPath, { replace: true });
     } catch (err: any) {
       console.error('💥 Login error:', err);
       setError(err.message || 'An unexpected error occurred');
@@ -114,7 +110,9 @@ const Login = () => {
           </div>
 
           <div className="mt-8">
-            {/* User Type Selection */}
+            {/* User Type Selection - Note: Role is determined by the account, but we keep this UI for context or clarity if needed, 
+                though strictly speaking login just needs creds. We might remove this if role is auto-detected. 
+                For now keeping it as it was in the UI. */}
             <div className="mb-6">
               <label className="block mb-3 text-sm font-medium text-gray-700">
                 I am a
@@ -123,11 +121,10 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => handleUserTypeChange('buyer')}
-                  className={`flex items-center justify-center px-4 py-3 border rounded-md transition-colors ${
-                    formData.userType === 'buyer'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`flex items-center justify-center px-4 py-3 border rounded-md transition-colors ${formData.userType === 'buyer'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
                 >
                   <User className="w-5 h-5 mr-2" />
                   Customer
@@ -135,11 +132,10 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => handleUserTypeChange('seller')}
-                  className={`flex items-center justify-center px-4 py-3 border rounded-md transition-colors ${
-                    formData.userType === 'seller'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`flex items-center justify-center px-4 py-3 border rounded-md transition-colors ${formData.userType === 'seller'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
                 >
                   <Building2 className="w-5 h-5 mr-2" />
                   Vendor
@@ -163,7 +159,7 @@ const Login = () => {
                   htmlFor="username"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Email or Phone Number
+                  Email Address
                 </label>
                 <div className="relative mt-1">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -172,12 +168,12 @@ const Login = () => {
                   <input
                     id="username"
                     name="username"
-                    type="text"
+                    type="email"
                     required
                     value={formData.username}
                     onChange={handleInputChange}
                     className="block w-full py-3 pl-10 pr-3 placeholder-gray-400 transition-colors border border-gray-300 rounded-md appearance-none focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="Enter your email or phone number"
+                    placeholder="Enter your email"
                   />
                 </div>
               </div>
@@ -223,7 +219,7 @@ const Login = () => {
                   disabled={submitting}
                   className="flex justify-center w-full px-4 py-3 text-sm font-medium text-white transition-colors bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75"
                 >
-                  {submitting ? 'Signing in...' : `Sign in as ${formData.userType}`}
+                  {submitting ? 'Signing in...' : 'Sign In'}
                 </button>
               </div>
             </form>

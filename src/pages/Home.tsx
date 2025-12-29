@@ -1,13 +1,110 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../utils/supabase'
+
+interface Service {
+  id: string;
+  name: string;
+  image: string;
+}
+
+interface Professional {
+  id: string;
+  name: string;
+  role: string;
+  location: string;
+  desc: string;
+  rating: number;
+  reviews: number;
+  price: number;
+  image: string;
+}
 
 const Home = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [counters, setCounters] = useState({ satisfaction: 0, professionals: 0, projects: 0, delivery: 0 })
   const [carouselIndex, setCarouselIndex] = useState(0)
+  const [featuredServices, setFeaturedServices] = useState<Service[]>([])
+  const [topProfessionals, setTopProfessionals] = useState<Professional[]>([])
+  const [loading, setLoading] = useState(true)
+
   const statsRef = useRef<HTMLElement>(null)
   const navigate = useNavigate()
+
+  // Real stats fetching
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { count: professionalCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'seller')
+
+      const { count: projectCount } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'completed')
+
+      setCounters(prev => ({
+        ...prev,
+        professionals: professionalCount || 0,
+        projects: projectCount || 0,
+        satisfaction: 98, // Hardcoded for now until we have reviews logic
+        delivery: 99     // Hardcoded for now
+      }))
+    }
+    fetchStats()
+  }, [])
+
+  // Fetch Featured Services and Professionals
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch Services
+        const { data: servicesData } = await supabase
+          .from('services')
+          .select('id, title, images')
+          .eq('status', 'approved')
+          .limit(10)
+
+        if (servicesData) {
+          setFeaturedServices(servicesData.map(s => ({
+            id: s.id,
+            name: s.title,
+            image: s.images && s.images[0] ? s.images[0] : '/assets/images/placeholder.jpg'
+          })))
+        }
+
+        // Fetch Professionals (Sellers)
+        const { data: sellersData } = await supabase
+          .from('profiles')
+          .select('id, full_name, category, location, avatar_url, bio')
+          .eq('role', 'seller')
+          .limit(10)
+
+        if (sellersData) {
+          // Enhancing with mock ratings until reviews are fully linked
+          setTopProfessionals(sellersData.map(s => ({
+            id: s.id,
+            name: s.full_name || 'Service Provider',
+            role: s.category || 'Professional',
+            location: s.location || 'Nigeria',
+            desc: s.bio || 'Skilled professional ready to help.',
+            rating: 5.0,
+            reviews: 0,
+            price: 0, // Base price isn't on profile, would need to fetch min service price
+            image: s.avatar_url || 'https://via.placeholder.com/150'
+          })))
+        }
+
+      } catch (error) {
+        console.error('Error fetching home data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
 
   const suggestions = [
     { name: 'Fashion Designer', sub: 'Traditional & modern attire', icon: '/assets/images/fashion-design.jpeg', type: 'popular' },
@@ -19,24 +116,6 @@ const Home = () => {
   ]
 
   const trending = ['Fashion Designer', 'Catering', 'Plumbing', 'Hair Stylist', 'Event Planning']
-
-  const services = [
-    { id: 1, name: 'Fashion Design', image: '/assets/images/fashion design.jpeg' },
-    { id: 2, name: 'Catering', image: '/assets/images/catering.jpeg' },
-    { id: 3, name: 'Plumbing', image: '/assets/images/plumbing.jpeg' },
-    { id: 4, name: 'Consulting', image: '/assets/images/consulting.jpg' },
-    { id: 5, name: 'Carpentry', image: '/assets/images/carpentry.jpeg' },
-    { id: 6, name: 'Real Estate', image: '/assets/images/real estate.jpeg' },
-    { id: 7, name: 'Teaching', image: '/assets/images/teaching.jpg' },
-  ]
-
-  const professionals = [
-    { id: 1, name: 'Chiamaka Okoro', role: 'Fashion Designer', location: 'Lagos', desc: 'Traditional and modern Nigerian fashion designs with 5+ years experience.', rating: 4.9, reviews: 230, price: 15000, image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200' },
-    { id: 2, name: 'Adebola Johnson', role: 'Caterer', location: 'Abuja', desc: 'Expert in Nigerian cuisine for events and special occasions.', rating: 4.8, reviews: 180, price: 30000, image: 'https://images.unsplash.com/photo-1595152772835-219674b2a8a6?q=80&w=200' },
-    { id: 3, name: 'Oluwaseun Adeyemi', role: 'Plumber', location: 'Ibadan', desc: 'Reliable plumbing services for repairs and installations.', rating: 4.7, reviews: 150, price: 10000, image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200' },
-    { id: 4, name: 'Ngozi Balogun', role: 'Event Planner', location: 'Lagos', desc: 'Professional event planning for weddings and corporate events.', rating: 4.9, reviews: 200, price: 25000, image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200' },
-    { id: 5, name: 'Emeka Uche', role: 'Carpenter', location: 'Enugu', desc: 'Custom furniture and woodwork with attention to detail.', rating: 4.8, reviews: 120, price: 20000, image: 'https://images.unsplash.com/photo-1607746882042-944635dfe10e?q=80&w=200' },
-  ]
 
   const testimonials = [
     {
@@ -66,34 +145,25 @@ const Home = () => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          const interval1 = setInterval(() => setCounters(prev => ({ ...prev, satisfaction: prev.satisfaction < 95 ? prev.satisfaction + 1 : 95 })), 20)
-          const interval2 = setInterval(() => setCounters(prev => ({ ...prev, professionals: prev.professionals < 2500 ? prev.professionals + 50 : 2500 })), 10)
-          const interval3 = setInterval(() => setCounters(prev => ({ ...prev, projects: prev.projects < 15000 ? prev.projects + 100 : 15000 })), 5)
-          const interval4 = setInterval(() => setCounters(prev => ({ ...prev, delivery: prev.delivery < 98 ? prev.delivery + 1 : 98 })), 20)
-          setTimeout(() => {
-            clearInterval(interval1)
-            clearInterval(interval2)
-            clearInterval(interval3)
-            clearInterval(interval4)
-          }, 2000)
-          observer.disconnect()
+          // Updated counter logic to use real values where available
+          // Note: animate value logic is kept simple here, ideally use a library or custom hook for smooth counting to 'counters.professionals' etc.
         }
       },
       { threshold: 0.5 }
     )
     if (statsRef.current) observer.observe(statsRef.current)
     return () => observer.disconnect()
-  }, [])
+  }, [counters])
 
   const handleSearch = (value: string) => {
     setSearchQuery(value)
     setShowSuggestions(false)
-    navigate(`/search?q=${encodeURIComponent(value)}`)
+    navigate(`/browse-services?search=${encodeURIComponent(value)}`) // Fixed search route
   }
 
   const visibleCards = 5
   const handlePrev = () => setCarouselIndex(prev => Math.max(prev - 1, 0))
-  const handleNext = () => setCarouselIndex(prev => Math.min(prev + 1, professionals.length - visibleCards))
+  const handleNext = () => setCarouselIndex(prev => Math.min(prev + 1, topProfessionals.length - visibleCards))
 
   return (
     <>
@@ -223,7 +293,7 @@ const Home = () => {
           </Link>
         </div>
         <div className="mt-5 flex space-x-4 overflow-x-auto scrollbar-hide">
-          {services.map((service) => (
+          {featuredServices.map((service) => (
             <Link
               key={service.id}
               to={`/service/${service.id}`}
@@ -231,11 +301,14 @@ const Home = () => {
             >
               <img src={service.image} alt={service.name} className="absolute inset-0 w-full h-full object-cover" />
               <div className="absolute inset-0 bg-black/50 group-hover:bg-black/60 transition"></div>
-              <div className="relative flex items-center justify-center h-full text-white font-semibold">
+              <div className="relative flex items-center justify-center h-full text-white font-semibold text-center px-2">
                 {service.name}
               </div>
             </Link>
           ))}
+          {featuredServices.length === 0 && !loading && (
+            <div className="w-full text-center text-gray-500 py-4">No featured services found.</div>
+          )}
         </div>
       </section>
 
@@ -350,25 +423,28 @@ const Home = () => {
           </button>
         </div>
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6" style={{ transform: `translateX(-${carouselIndex * (100 / visibleCards)}%)`, transition: 'transform 0.3s ease' }}>
-          {professionals.map((pro) => (
+          {topProfessionals.map((pro) => (
             <div key={pro.id} className="card p-6 text-center">
               <img className="mx-auto h-20 w-20 rounded-full object-cover ring-2 ring-blue-50" src={pro.image} alt={pro.name} />
-              <div className="mt-3 text-base font-semibold">{pro.name}</div>
-              <div className="text-xs text-gray-500">{pro.role} • {pro.location}</div>
-              <p className="mt-3 text-sm text-gray-600">{pro.desc}</p>
+              <div className="mt-3 text-base font-semibold truncate">{pro.name}</div>
+              <div className="text-xs text-gray-500 truncate">{pro.role} • {pro.location}</div>
+              <p className="mt-3 text-sm text-gray-600 line-clamp-2">{pro.desc}</p>
               <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
                 <div className="flex items-center gap-1 text-yellow-500">
                   <i className="fas fa-star text-xs"></i>
                   <span className="text-gray-700">{pro.rating}</span>
-                  <span className="text-gray-400">({pro.reviews}+)</span>
                 </div>
-                <div className="rounded-full bg-blue-50 text-primary-blue px-3 py-1 font-medium">₦{pro.price.toLocaleString()}</div>
+                {/* Price hidden if 0 or dependent on service */}
+                {/* <div className="rounded-full bg-blue-50 text-primary-blue px-3 py-1 font-medium">₦{pro.price.toLocaleString()}</div> */}
               </div>
-              <Link to={`/profile/${pro.id}`} className="mt-4 w-full block rounded-lg bg-primary-blue px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark transition">
+              <Link to={`/seller/${pro.id}`} className="mt-4 w-full block rounded-lg bg-primary-blue px-3 py-2 text-sm font-medium text-white hover:bg-primary-dark transition">
                 Hire Now
               </Link>
             </div>
           ))}
+          {topProfessionals.length === 0 && !loading && (
+            <div className="col-span-full text-center text-gray-500 py-4">No professionals found.</div>
+          )}
         </div>
       </section>
 

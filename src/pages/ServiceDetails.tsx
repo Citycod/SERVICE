@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { supabase } from '../utils/supabase';
 
 interface Service {
   id: string;
@@ -8,11 +9,11 @@ interface Service {
   description: string;
   price: number;
   delivery: string;
-  seller: { 
+  seller: {
     id: string;
-    name: string; 
-    rating: number; 
-    reviews: number; 
+    name: string;
+    rating: number;
+    reviews: number;
     imageUrl: string;
     responseTime: string;
     completedJobs: number;
@@ -21,11 +22,11 @@ interface Service {
     location: string;
     specialties: string[];
   };
-  reviews: { 
-    id: string; 
-    text: string; 
-    rating: number; 
-    user: string; 
+  reviews: {
+    id: string;
+    text: string;
+    rating: number;
+    user: string;
     date: string;
     verified: boolean;
   }[];
@@ -48,106 +49,159 @@ const ServiceDetails = () => {
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [activeTab, setActiveTab] = useState('description');
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
-
-  const allServices: Service[] = [
-    {
-      id: '1',
-      title: 'Professional Plumbing Repair',
-      description: 'Expert plumbing repair services for leaks, pipes, and fixtures. Our certified plumbers provide quick and reliable solutions for all your plumbing needs. We use high-quality materials and modern techniques to ensure long-lasting results.\n\nWith over 5 years of experience in residential and commercial plumbing, we handle everything from minor leaks to major pipe replacements. Our team is available 24/7 for emergency services.',
-      price: 15000,
-      delivery: '1 day',
-      seller: { 
-        id: 'seller1',
-        name: 'Oluwaseun Adeyemi', 
-        rating: 4.7, 
-        reviews: 50,
-        imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80',
-        responseTime: 'Within 1 hour',
-        completedJobs: 247,
-        memberSince: '2020',
-        bio: 'Certified plumber with over 8 years of experience in residential and commercial plumbing. Specialized in emergency repairs and pipe installations.',
-        location: 'Lagos, Nigeria',
-        specialties: ['Emergency Plumbing', 'Pipe Installation', 'Leak Repair', 'Water Heater Installation']
-      },
-      reviews: [
-        { id: '1', text: 'Fixed my leak quickly and professionally. Would definitely hire again!', rating: 5, user: 'John Adebayo', date: '2023-10-15', verified: true },
-        { id: '2', text: 'Great service and fair pricing. The plumber was punctual and courteous.', rating: 4.5, user: 'Mary Johnson', date: '2023-09-22', verified: true },
-        { id: '3', text: 'Excellent work! They arrived on time and completed the job efficiently.', rating: 5, user: 'David Smith', date: '2023-11-10', verified: true },
-        { id: '4', text: 'Good service but a bit expensive. Quality was satisfactory.', rating: 4, user: 'Sarah Wilson', date: '2023-08-05', verified: false },
-      ],
-      imageUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80',
-      category: 'Plumbing',
-      whatsappNumber: '+2348012345678',
-      portfolioImages: [
-        'https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?ixlib=rb-4.0.3&auto=format&fit=crop&w=1074&q=80',
-        'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1169&q=80',
-        'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?ixlib=rb-4.0.3&auto=format&fit=crop&w=1171&q=80'
-      ],
-      features: [
-        '24/7 Emergency Service',
-        'Free Initial Inspection',
-        '6 Months Service Warranty',
-        'Certified Professionals',
-        'Same Day Service Available'
-      ],
-      requirements: [
-        'Clear access to plumbing area',
-        'Water supply should be turned off',
-        'Provide details of the issue beforehand'
-      ],
-      tags: ['Emergency', 'Residential', 'Commercial', 'Leak Repair', 'Pipe Installation']
-    },
-    {
-      id: '2',
-      title: 'Borehole Drilling Service',
-      description: 'Professional borehole drilling for water supply solutions. We provide end-to-end services from site assessment to drilling and installation of pumping systems. Our team uses modern equipment to ensure efficient and reliable water supply.',
-      price: 8088800,
-      delivery: '14 days',
-      seller: { 
-        id: 'seller2',
-        name: 'Globalwater Co.', 
-        rating: 4.6, 
-        reviews: 20,
-        imageUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80',
-        responseTime: 'Within 24 hours',
-        completedJobs: 89,
-        memberSince: '2018',
-        bio: 'Leading borehole drilling company with state-of-the-art equipment and certified geologists. Serving residential, commercial, and industrial clients across Nigeria.',
-        location: 'Abuja, Nigeria',
-        specialties: ['Borehole Drilling', 'Water Treatment', 'Pump Installation', 'Geological Survey']
-      },
-      reviews: [
-        { id: '1', text: 'Excellent work! They delivered exactly what was promised ahead of schedule.', rating: 4.5, user: 'Peter Okonkwo', date: '2023-11-05', verified: true },
-      ],
-      imageUrl: 'https://images.unsplash.com/photo-1615529162921-f5d0c07042a7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80',
-      category: 'Plumbing',
-      whatsappNumber: '+2348012345679',
-      portfolioImages: [
-        'https://images.unsplash.com/photo-1615529328331-f8917597711f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80',
-        'https://images.unsplash.com/photo-1615529162921-f5d0c07042a7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80',
-        'https://images.unsplash.com/photo-1615529328331-f8917597711f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80'
-      ],
-      features: [
-        'Geological Survey Included',
-        'Modern Drilling Equipment',
-        'Water Quality Testing',
-        'Pump Installation',
-        'Maintenance Services'
-      ],
-      requirements: [
-        'Site access for equipment',
-        'Necessary permits obtained',
-        'Water testing requirements'
-      ],
-      tags: ['Drilling', 'Water Supply', 'Commercial', 'Industrial']
-    },
-  ];
+  const [relatedServices, setRelatedServices] = useState<Service[]>([]);
 
   useEffect(() => {
-    const foundService = allServices.find((s) => s.id === id);
-    setService(foundService || null);
-    setLoading(false);
+    if (id) {
+      fetchServiceDetails();
+    }
   }, [id]);
+
+  const fetchServiceDetails = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch service with seller info
+      const { data: serviceData, error: serviceError } = await supabase
+        .from('services')
+        .select(`
+          id, title, description, price, category, delivery_time, images, tags, requirements, location, views,
+          seller:profiles!services_seller_id_fkey(id, full_name, avatar_url, bio, location, skills, phone, created_at)
+        `)
+        .eq('id', id)
+        .single();
+
+      if (serviceError) throw serviceError;
+      if (!serviceData) {
+        setService(null);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch reviews for this service
+      const { data: reviewsData } = await supabase
+        .from('reviews')
+        .select(`
+          id, rating, comment, created_at,
+          reviewer:profiles!reviews_reviewer_id_fkey(full_name)
+        `)
+        .eq('service_id', id)
+        .order('created_at', { ascending: false });
+
+      // Handle seller data (could be array or object)
+      const sellerData = Array.isArray(serviceData.seller) ? serviceData.seller[0] : serviceData.seller;
+      const sellerId = sellerData?.id;
+
+      // Fetch seller's completed orders count
+      const { count: completedOrders } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('seller_id', sellerId)
+        .eq('status', 'completed');
+
+      // Fetch seller's average rating
+      const { data: sellerServices } = await supabase
+        .from('services')
+        .select('id')
+        .eq('seller_id', sellerId);
+
+      let sellerRating = 0;
+      let sellerReviewCount = 0;
+      if (sellerServices && sellerServices.length > 0) {
+        const serviceIds = sellerServices.map(s => s.id);
+        const { data: sellerReviews } = await supabase
+          .from('reviews')
+          .select('rating')
+          .in('service_id', serviceIds);
+
+        if (sellerReviews && sellerReviews.length > 0) {
+          sellerReviewCount = sellerReviews.length;
+          sellerRating = sellerReviews.reduce((sum, r) => sum + r.rating, 0) / sellerReviewCount;
+        }
+      }
+
+      // memberYear uses sellerData already defined above
+      const memberYear = sellerData?.created_at ? new Date(sellerData.created_at).getFullYear().toString() : '2024';
+
+      // Transform data to match interface
+      const transformedService: Service = {
+        id: serviceData.id,
+        title: serviceData.title,
+        description: serviceData.description || '',
+        price: serviceData.price,
+        delivery: serviceData.delivery_time || '3 days',
+        seller: {
+          id: sellerData?.id || '',
+          name: sellerData?.full_name || 'Unknown Seller',
+          rating: Math.round(sellerRating * 10) / 10,
+          reviews: sellerReviewCount,
+          imageUrl: sellerData?.avatar_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=687&q=80',
+          responseTime: 'Within 1 hour',
+          completedJobs: completedOrders || 0,
+          memberSince: memberYear,
+          bio: sellerData?.bio || 'Professional service provider',
+          location: sellerData?.location || 'Nigeria',
+          specialties: sellerData?.skills || ['Professional Service']
+        },
+        reviews: (reviewsData || []).map(r => {
+          const reviewerData = Array.isArray(r.reviewer) ? r.reviewer[0] : r.reviewer;
+          return {
+            id: r.id,
+            text: r.comment || '',
+            rating: r.rating,
+            user: reviewerData?.full_name || 'Anonymous',
+            date: new Date(r.created_at).toISOString().split('T')[0],
+            verified: true
+          };
+        }),
+        imageUrl: serviceData.images?.[0] || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80',
+        category: serviceData.category || 'General',
+        whatsappNumber: sellerData?.phone || '+2348000000000',
+        portfolioImages: serviceData.images || [],
+        features: ['Quality Service', 'Professional Work', 'Timely Delivery', 'Customer Support'],
+        requirements: serviceData.requirements || ['Please provide details of your requirements'],
+        tags: serviceData.tags || []
+      };
+
+      setService(transformedService);
+
+      // Fetch related services
+      const { data: related } = await supabase
+        .from('services')
+        .select('id, title, description, price, category, images')
+        .eq('status', 'approved')
+        .eq('category', serviceData.category)
+        .neq('id', id)
+        .limit(3);
+
+      if (related) {
+        setRelatedServices(related.map(r => ({
+          ...r,
+          delivery: '3 days',
+          seller: { id: '', name: '', rating: 0, reviews: 0, imageUrl: '', responseTime: '', completedJobs: 0, memberSince: '', bio: '', location: '', specialties: [] },
+          reviews: [],
+          imageUrl: r.images?.[0] || '',
+          whatsappNumber: '',
+          portfolioImages: r.images || [],
+          features: [],
+          requirements: [],
+          tags: []
+        })));
+      }
+
+      // Increment view count
+      await supabase
+        .from('services')
+        .update({ views: (serviceData.views || 0) + 1 })
+        .eq('id', id);
+
+    } catch (error) {
+      console.error('Error fetching service:', error);
+      setService(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleWhatsAppMessage = () => {
     const message = `Hello! I'm interested in your service: ${service?.title}. Please provide more information.`;
@@ -157,9 +211,9 @@ const ServiceDetails = () => {
 
   const handleOrderNow = () => {
     if (!service) return;
-    
-    navigate('/order-summary', { 
-      state: { 
+
+    navigate('/order-summary', {
+      state: {
         service: {
           id: service.id,
           title: service.title,
@@ -170,13 +224,13 @@ const ServiceDetails = () => {
         },
         quantity,
         totalPrice: service.price * quantity
-      } 
+      }
     });
   };
 
   const handleViewSellerProfile = () => {
     if (service?.seller) {
-      navigate(`/seller/${service.seller.id}`, { 
+      navigate(`/seller/${service.seller.id}`, {
         state: { seller: service.seller }
       });
     }
@@ -184,8 +238,8 @@ const ServiceDetails = () => {
 
   const handleMessageSeller = () => {
     if (service?.seller) {
-      navigate('/messaging', { 
-        state: { 
+      navigate('/messaging', {
+        state: {
           recipient: {
             id: service.seller.id,
             name: service.seller.name,
@@ -199,7 +253,7 @@ const ServiceDetails = () => {
             image: service.imageUrl
           },
           initialMessage: `Hi ${service.seller.name}, I'm interested in your "${service.title}" service. Can you tell me more about it?`
-        } 
+        }
       });
     }
   };
@@ -212,7 +266,7 @@ const ServiceDetails = () => {
       </div>
     </div>
   );
-  
+
   if (!service) return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="text-center">
@@ -228,10 +282,8 @@ const ServiceDetails = () => {
     </div>
   );
 
-  // Filter related services (exclude current service)
-  const relatedServices = allServices
-    .filter((s) => s.category === service.category && s.id !== id)
-    .slice(0, 3);
+
+  // Related services are already fetched in fetchServiceDetails and stored in state
 
   const totalRating = service.reviews.reduce((acc, review) => acc + review.rating, 0);
   const averageRating = service.reviews.length > 0 ? totalRating / service.reviews.length : 0;
@@ -281,12 +333,12 @@ const ServiceDetails = () => {
                   {service.delivery} Delivery
                 </div>
               </div>
-              
+
               {/* Thumbnail Gallery */}
               <div className="flex p-4 space-x-2 overflow-x-auto">
                 {service.portfolioImages.map((img, index) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden cursor-pointer border-2 transition-all ${activeImage === index ? 'border-blue-500 scale-105' : 'border-gray-200 hover:border-gray-300'}`}
                     onClick={() => setActiveImage(index)}
                   >
@@ -308,11 +360,10 @@ const ServiceDetails = () => {
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
-                      className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
-                        activeTab === tab
-                          ? 'border-blue-500 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
+                      className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors ${activeTab === tab
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
                     >
                       {tab.charAt(0).toUpperCase() + tab.slice(1)}
                     </button>
@@ -328,7 +379,7 @@ const ServiceDetails = () => {
                     <div className="leading-relaxed text-gray-700 whitespace-pre-line">
                       {service.description}
                     </div>
-                    
+
                     {/* Tags */}
                     <div className="mt-6">
                       <h3 className="mb-3 text-lg font-semibold text-gray-900">Service Tags</h3>
@@ -400,8 +451,8 @@ const ServiceDetails = () => {
                           <div key={stars} className="flex items-center text-sm">
                             <span className="w-8 text-gray-600">{stars} ★</span>
                             <div className="w-24 h-2 mx-2 bg-gray-200 rounded-full">
-                              <div 
-                                className="h-2 bg-yellow-500 rounded-full" 
+                              <div
+                                className="h-2 bg-yellow-500 rounded-full"
                                 style={{ width: `${percentage}%` }}
                               ></div>
                             </div>
@@ -492,10 +543,10 @@ const ServiceDetails = () => {
                           </div>
                           <span className="text-gray-600">({service.seller.reviews} reviews)</span>
                         </div>
-                        
+
                         {/* Seller Bio */}
                         <p className="mb-4 text-gray-700">{service.seller.bio}</p>
-                        
+
                         {/* Seller Details */}
                         <div className="grid grid-cols-1 gap-4 mt-6 md:grid-cols-2">
                           <div className="text-center">
@@ -520,8 +571,8 @@ const ServiceDetails = () => {
                         <div className="mt-4">
                           <div className="flex items-center text-gray-600">
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                             {service.seller.location}
                           </div>
@@ -567,7 +618,7 @@ const ServiceDetails = () => {
             {/* Purchase Card */}
             <div className="sticky p-6 bg-white shadow-lg rounded-xl top-6">
               <h1 className="mb-4 text-2xl font-bold text-gray-900">{service.title}</h1>
-              
+
               <div className="flex items-center mb-6">
                 <div className="flex mr-2 text-lg text-yellow-500">
                   {[...Array(5)].map((_, i) => (
@@ -580,7 +631,7 @@ const ServiceDetails = () => {
               </div>
 
               <div className="mb-2 text-3xl font-bold text-gray-900">₦{service.price.toLocaleString()}</div>
-              
+
               <div className="flex items-center mb-6 text-gray-600">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -592,14 +643,14 @@ const ServiceDetails = () => {
               <div className="mb-6">
                 <label className="block mb-2 text-sm font-medium text-gray-700">Quantity</label>
                 <div className="flex items-center max-w-xs">
-                  <button 
+                  <button
                     onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
                     className="px-4 py-2 text-gray-700 transition-colors bg-gray-200 rounded-l-lg hover:bg-gray-300"
                   >
                     -
                   </button>
                   <div className="flex-1 px-4 py-2 font-medium text-center text-gray-900 bg-gray-100">{quantity}</div>
-                  <button 
+                  <button
                     onClick={() => setQuantity(prev => prev + 1)}
                     className="px-4 py-2 text-gray-700 transition-colors bg-gray-200 rounded-r-lg hover:bg-gray-300"
                   >
@@ -615,29 +666,29 @@ const ServiceDetails = () => {
               </div>
 
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={handleOrderNow}
                   className="block w-full px-6 py-4 font-semibold text-center text-white transition-colors bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 hover:shadow-lg"
                 >
                   Order Now
                 </button>
-                
-                <button 
+
+                <button
                   onClick={handleWhatsAppMessage}
                   className="flex items-center justify-center w-full px-6 py-4 font-semibold text-white transition-colors bg-green-600 rounded-lg shadow-md hover:bg-green-700 hover:shadow-lg"
                 >
                   <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893    c0 0-2.16-1.035-2.16-1.035"/>
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893    c0 0-2.16-1.035-2.16-1.035" />
                   </svg>
                   Chat on WhatsApp
                 </button>
 
-                <button 
+                <button
                   onClick={handleMessageSeller}
                   className="flex items-center justify-center w-full px-6 py-4 font-semibold text-gray-700 transition-colors bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
                   </svg>
                   Message Seller
                 </button>
@@ -678,7 +729,7 @@ const ServiceDetails = () => {
                     className="object-cover w-12 h-12 mr-4 rounded-full"
                   />
                   <div className="flex-1">
-                    <Link 
+                    <Link
                       to={`/seller/${service.seller.id}`}
                       className="font-semibold text-blue-600 hover:underline"
                     >
@@ -696,7 +747,7 @@ const ServiceDetails = () => {
                     </div>
                   </div>
                 </div>
-                <Link 
+                <Link
                   to={`/seller/${service.seller.id}`}
                   className="block w-full py-2 mt-4 text-sm font-medium text-center text-blue-600 transition-colors border border-blue-600 rounded-lg hover:bg-blue-50"
                 >
@@ -711,22 +762,22 @@ const ServiceDetails = () => {
               <div className="flex space-x-3">
                 <button className="flex items-center justify-center w-10 h-10 text-white transition-colors bg-blue-600 rounded-full hover:bg-blue-700">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                   </svg>
                 </button>
                 <button className="flex items-center justify-center w-10 h-10 text-white transition-colors bg-blue-400 rounded-full hover:bg-blue-500">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723 10.016 10.016 0 01-3.127 1.195 4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.937 4.937 0 004.604 3.417 9.868 9.868 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.054 0 13.999-7.496 13.999-13.986 0-.209 0-.42-.015-.63a9.936 9.936 0 002.46-2.543l-.047-.02z"/>
+                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723 10.016 10.016 0 01-3.127 1.195 4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.937 4.937 0 004.604 3.417 9.868 9.868 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.054 0 13.999-7.496 13.999-13.986 0-.209 0-.42-.015-.63a9.936 9.936 0 002.46-2.543l-.047-.02z" />
                   </svg>
                 </button>
                 <button className="flex items-center justify-center w-10 h-10 text-white transition-colors bg-red-500 rounded-full hover:bg-red-600">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z"/>
+                    <path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z" />
                   </svg>
                 </button>
                 <button className="flex items-center justify-center w-10 h-10 text-white transition-colors bg-gray-800 rounded-full hover:bg-gray-900">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                   </svg>
                 </button>
               </div>
@@ -738,7 +789,7 @@ const ServiceDetails = () => {
         {imageViewerOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90">
             <div className="relative max-w-4xl max-h-full">
-              <button 
+              <button
                 onClick={() => setImageViewerOpen(false)}
                 className="absolute z-10 p-2 text-white bg-black bg-opacity-50 rounded-full top-4 right-4 hover:bg-opacity-75"
               >
@@ -769,7 +820,7 @@ const ServiceDetails = () => {
           <div className="mt-12">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Related Services</h2>
-              <Link 
+              <Link
                 to={`/services?category=${service.category}`}
                 className="text-blue-600 hover:text-blue-800"
               >
@@ -794,7 +845,7 @@ const ServiceDetails = () => {
                     <p className="mb-3 text-sm text-gray-600 line-clamp-2">{relatedService.description}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-lg font-bold text-gray-900">₦{relatedService.price.toLocaleString()}</span>
-                      <Link 
+                      <Link
                         to={`/service/${relatedService.id}`}
                         className="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700"
                       >
@@ -823,7 +874,7 @@ const ServiceDetails = () => {
                 The service typically takes {service.delivery} to complete, depending on the complexity and scope of work.
               </div>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-sm">
               <button className="flex items-center justify-between w-full p-4 text-left">
                 <span className="font-semibold text-gray-900">What materials are included?</span>
@@ -832,7 +883,7 @@ const ServiceDetails = () => {
                 </svg>
               </button>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow-sm">
               <button className="flex items-center justify-between w-full p-4 text-left">
                 <span className="font-semibold text-gray-900">Do you provide warranty?</span>

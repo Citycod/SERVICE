@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useState, useEffect, useMemo } from 'react';
-import {  useSearchParams } from 'react-router-dom';
- import ServiceCard from './ServiceCard';
+import { useSearchParams } from 'react-router-dom';
+import ServiceCard from './ServiceCard';
+import { supabase } from '../utils/supabase';
 
 interface Service {
   id: string;
@@ -49,32 +50,69 @@ const BrowseServices = () => {
   ];
 
   useEffect(() => {
-    setTimeout(() => {
-      setServices([
-        { id: '1', title: 'Plumbing Repair', category: 'Plumbing', price: 15000, delivery: '1 day', rating: 4.7, seller: 'Oluwaseun Adeyemi', reviews: 50, imageUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '2', title: 'Borehole Drilling', category: 'Plumbing', price: 8088800, delivery: '14 days', rating: 4.6, seller: 'Globalwater Co.', reviews: 20, imageUrl: 'https://images.unsplash.com/photo-1615529162921-f5d0c07042a7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '3', title: 'Residential Plumbing', category: 'Plumbing', price: 25000, delivery: '2 days', rating: 4.8, seller: 'Fredrick De Plumber', reviews: 30, imageUrl: 'https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?ixlib=rb-4.0.3&auto=format&fit=crop&w=1074&q=80' },
-        { id: '4', title: 'Real Estate Development', category: 'Real Estate', price: 55000000, delivery: '180 days', rating: 4.5, seller: 'The Building Practice', reviews: 15, imageUrl: 'https://images.unsplash.com/photo-1448630360428-65456885c650?ixlib=rb-4.0.3&auto=format&fit=crop&w=1167&q=80' },
-        { id: '5', title: 'Property Renovation', category: 'Real Estate', price: 2000000, delivery: '30 days', rating: 4.6, seller: 'Cosgrove Investment', reviews: 25, imageUrl: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '6', title: 'Event Catering', category: 'Catering', price: 30000, delivery: '3 days', rating: 4.8, seller: 'Chioma Okeke', reviews: 40, imageUrl: 'https://images.unsplash.com/photo-1555244162-803834f70033?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '7', title: 'Fashion Design', category: 'Fashion', price: 15000, delivery: '5 days', rating: 4.9, seller: 'Chiamaka Okoro', reviews: 60, imageUrl: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1173&q=80' },
-        { id: '8', title: 'Interior Design', category: 'Design', price: 50000, delivery: '10 days', rating: 4.7, seller: 'Gemstone Realty', reviews: 35, imageUrl: 'https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1172&q=80' },
-        { id: '9', title: 'Electrical Installation', category: 'Electrical', price: 20000, delivery: '2 days', rating: 4.6, seller: 'OJM Electrical', reviews: 45, imageUrl: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '10', title: 'Painting Services', category: 'Painting', price: 25000, delivery: '4 days', rating: 4.5, seller: 'Experience Experts', reviews: 20, imageUrl: 'https://images.unsplash.com/photo-1579965342575-16428a7c8881?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '11', title: 'Roofing Services', category: 'Construction', price: 40000, delivery: '7 days', rating: 4.4, seller: 'Rufus Thomas & Co.', reviews: 15, imageUrl: 'https://images.unsplash.com/photo-1598031075263-2c6d8b3a139d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '12', title: 'Tiling Services', category: 'Construction', price: 30000, delivery: '5 days', rating: 4.6, seller: 'PopAndPolystyrene', reviews: 25, imageUrl: 'https://images.unsplash.com/photo-1581092335397-7a251f1b59c3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '13', title: 'Borehole Maintenance', category: 'Plumbing', price: 50000, delivery: '3 days', rating: 4.7, seller: 'An-Nur Contractor', reviews: 30, imageUrl: 'https://images.unsplash.com/photo-1615529328331-f8917597711f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '14', title: 'Estate Management', category: 'Real Estate', price: 1000000, delivery: '60 days', rating: 4.5, seller: 'Urban Shelter', reviews: 10, imageUrl: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1173&q=80' },
-        { id: '15', title: 'Landscaping Services', category: 'Gardening', price: 35000, delivery: '6 days', rating: 4.6, seller: 'Green Solutions', reviews: 20, imageUrl: 'https://images.unsplash.com/photo-1585060544812-6b45742d762f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1159&q=80' },
-        { id: '16', title: 'Security Installation', category: 'Security', price: 45000, delivery: '4 days', rating: 4.7, seller: 'Kinetic Electromech', reviews: 15, imageUrl: 'https://images.unsplash.com/photo-1557223562-6c77f16299b2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '17', title: 'HVAC Services', category: 'HVAC', price: 60000, delivery: '8 days', rating: 4.5, seller: 'Bluebridge Services', reviews: 12, imageUrl: 'https://images.unsplash.com/photo-1599677100233-4b22d99e5445?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '18', title: 'Carpentry Work', category: 'Carpentry', price: 20000, delivery: '3 days', rating: 4.6, seller: 'Awoye Contractor', reviews: 18, imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1158&q=80' },
-        { id: '19', title: 'Cleaning Services', category: 'Cleaning', price: 15000, delivery: '1 day', rating: 4.8, seller: 'Industrial Cleaners', reviews: 25, imageUrl: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-        { id: '20', title: 'Pest Control', category: 'Pest Control', price: 18000, delivery: '2 days', rating: 4.7, seller: 'Ehitech Global', reviews: 20, imageUrl: 'https://images.unsplash.com/photo-1596474376133-48c98333b221?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80' },
-      ]);
-      setLoading(false);
-    }, 1000);
+    fetchServices();
   }, []);
+
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch services with seller profiles
+      const { data: servicesData, error } = await supabase
+        .from('services')
+        .select(`
+          id,
+          title,
+          description,
+          price,
+          category,
+          images,
+          delivery_time,
+          seller_id,
+          seller:profiles!services_seller_id_fkey(full_name, avatar_url)
+        `)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch reviews for each service to calculate ratings
+      const servicesWithRatings = await Promise.all(
+        (servicesData || []).map(async (service) => {
+          const { data: reviews } = await supabase
+            .from('reviews')
+            .select('rating')
+            .eq('service_id', service.id);
+
+          const reviewCount = reviews?.length || 0;
+          const avgRating = reviewCount > 0
+            ? (reviews || []).reduce((sum, r) => sum + r.rating, 0) / reviewCount
+            : 0;
+
+          // Handle seller - could be array or object depending on Supabase query
+          const sellerData = Array.isArray(service.seller) ? service.seller[0] : service.seller;
+
+          return {
+            id: service.id,
+            title: service.title,
+            category: service.category || 'General',
+            price: service.price,
+            delivery: service.delivery_time || '3 days',
+            rating: Math.round(avgRating * 10) / 10,
+            seller: sellerData?.full_name || 'Unknown Vendor',
+            reviews: reviewCount,
+            imageUrl: service.images?.[0] || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80',
+          };
+        })
+      );
+
+      setServices(servicesWithRatings);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Extract unique categories and sellers for filter options
   const categories = useMemo(() => {
@@ -89,14 +127,14 @@ const BrowseServices = () => {
 
   const filteredServices = useMemo(() => {
     const filtered = services.filter((service) => {
-      const matchesSearch = searchQuery === '' || 
+      const matchesSearch = searchQuery === '' ||
         service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
         service.seller.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesCategory = !filters.category || service.category === filters.category;
       const matchesSeller = !filters.seller || service.seller === filters.seller;
-      
+
       // Handle price range filter (predefined ranges)
       let matchesPriceRange = true;
       if (filters.priceRange) {
@@ -105,17 +143,17 @@ const BrowseServices = () => {
           matchesPriceRange = service.price >= range.min && service.price <= range.max;
         }
       }
-      
+
       // Handle custom price range
       const minPrice = filters.minPrice ? parseInt(filters.minPrice) : 0;
       const maxPrice = filters.maxPrice ? parseInt(filters.maxPrice) : Infinity;
       const matchesCustomPrice = service.price >= minPrice && service.price <= maxPrice;
-      
+
       const matchesDelivery = !filters.delivery || service.delivery === filters.delivery;
       const matchesRating = !filters.rating || service.rating >= parseFloat(filters.rating);
-      
-      return matchesSearch && matchesCategory && matchesSeller && 
-             matchesPriceRange && matchesCustomPrice && matchesDelivery && matchesRating;
+
+      return matchesSearch && matchesCategory && matchesSeller &&
+        matchesPriceRange && matchesCustomPrice && matchesDelivery && matchesRating;
     });
 
     // Apply sorting
@@ -178,7 +216,7 @@ const BrowseServices = () => {
                     {activeFilterCount}
                   </span>
                 )}
-                <button 
+                <button
                   onClick={clearFilters}
                   className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-800"
                 >
@@ -186,7 +224,7 @@ const BrowseServices = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="space-y-6">
               {/* Search */}
               <div>
@@ -199,11 +237,11 @@ const BrowseServices = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full p-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  <svg 
-                    className="absolute w-5 h-5 text-gray-400 right-3 top-3" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24" 
+                  <svg
+                    className="absolute w-5 h-5 text-gray-400 right-3 top-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -240,7 +278,7 @@ const BrowseServices = () => {
                   ))}
                 </select>
               </div>
-              
+
               {/* Price Range */}
               <div>
                 <h3 className="mb-3 font-medium text-gray-900">Price Range</h3>
@@ -254,7 +292,7 @@ const BrowseServices = () => {
                     <option key={range.label} value={range.label}>{range.label}</option>
                   ))}
                 </select>
-                
+
                 <div className="flex space-x-3">
                   <input
                     type="number"
@@ -272,7 +310,7 @@ const BrowseServices = () => {
                   />
                 </div>
               </div>
-              
+
               {/* Delivery Time */}
               <div>
                 <h3 className="mb-3 font-medium text-gray-900">Delivery Time</h3>
@@ -296,7 +334,7 @@ const BrowseServices = () => {
                   <option value="180 days">180 Days</option>
                 </select>
               </div>
-              
+
               {/* Rating */}
               <div>
                 <h3 className="mb-3 font-medium text-gray-900">Minimum Rating</h3>
@@ -325,9 +363,9 @@ const BrowseServices = () => {
                   {activeFilterCount > 0 && ` • ${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'} active`}
                 </p>
               </div>
-              
+
               <div className="flex flex-col w-full gap-3 sm:flex-row sm:w-auto">
-                <select 
+                <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="w-full p-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:w-48"
@@ -341,7 +379,7 @@ const BrowseServices = () => {
                 </select>
               </div>
             </div>
-            
+
             {loading ? (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {[...Array(6)].map((_, i) => (
@@ -360,7 +398,7 @@ const BrowseServices = () => {
                 </svg>
                 <h3 className="mt-2 text-lg font-medium text-gray-900">No services found</h3>
                 <p className="mt-1 text-gray-500">Try adjusting your search or filter to find what you're looking for.</p>
-                <button 
+                <button
                   onClick={clearFilters}
                   className="inline-flex items-center px-4 py-2 mt-4 text-sm font-medium text-white transition-colors bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >

@@ -1,69 +1,115 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../utils/supabase";
 import {
   Home,
   MessageCircle,
   Briefcase,
   Settings,
   Search,
-  
   LogOut,
   User,
   Eye,
   Star,
   TrendingUp,
-  
   ArrowRight,
 } from "lucide-react";
 
+interface RecentActivity {
+  id: string;
+  type: "message" | "order" | "payment" | "review" | "recommendation";
+  text: string;
+  time: string;
+}
+
+interface DashboardStats {
+  activeOrders: number;
+  totalSpent: number;
+  savedServices: number;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
-  const userId = "123"; // Mock user ID for Alex Johnson; replace with actual user ID from auth
+  const { user, logout } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    activeOrders: 0,
+    totalSpent: 0,
+    savedServices: 0,
+  });
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
 
-  // Customer activity data
-  const recentActivities = [
-    {
-      id: 1,
-      type: "message",
-      text: "New message from Creative Solutions regarding your logo design order.",
-      time: "2 hours ago",
-      icon: MessageCircle,
-    },
-    {
-      id: 2,
-      type: "order",
-      text: "Your 'Website Development' order has been delivered by Jane Smith.",
-      time: "Yesterday",
-      icon: Briefcase,
-    },
-    {
-      id: 3,
-      type: "payment",
-      text: "Payment of ₦250,000 processed for 'Logo Design' service via Paystack.",
-      time: "Yesterday",
-      icon: TrendingUp,
-    },
-    {
-      id: 4,
-      type: "review",
-      text: "Please review your completed 'Brand Identity' project.",
-      time: "Last week",
-      icon: Star,
-    },
-    {
-      id: 5,
-      type: "recommendation",
-      text: "New recommended services based on your recent purchases.",
-      time: "1 day ago",
-      icon: Eye,
-    },
-  ];
+  useEffect(() => {
+    if (user?.id) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch active orders count
+      const { count: activeOrders } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("buyer_id", user?.id)
+        .in("status", ["pending", "paid", "in_progress", "delivered"]);
+
+      // Fetch total spent
+      const { data: completedOrders } = await supabase
+        .from("orders")
+        .select("amount")
+        .eq("buyer_id", user?.id)
+        .eq("status", "completed");
+
+      const totalSpent = completedOrders?.reduce((sum, order) => sum + (order.amount || 0), 0) || 0;
+
+      // Fetch saved services count
+      const { count: savedServices } = await supabase
+        .from("favorites")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user?.id);
+
+      setStats({
+        activeOrders: activeOrders || 0,
+        totalSpent,
+        savedServices: savedServices || 0,
+      });
+
+      // Fetch recent orders as activities
+      const { data: recentOrders } = await supabase
+        .from("orders")
+        .select("id, status, amount, created_at, service:services(title)")
+        .eq("buyer_id", user?.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      const activities: RecentActivity[] = (recentOrders || []).map((order) => {
+        const serviceData = Array.isArray(order.service) ? order.service[0] : order.service;
+        return {
+          id: order.id,
+          type: order.status === "completed" ? "payment" : "order",
+          text: `Order for '${serviceData?.title || "Service"}' - ₦${order.amount?.toLocaleString()}`,
+          time: new Date(order.created_at).toLocaleDateString(),
+        };
+      });
+
+      setRecentActivities(activities);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const quickStats = [
-    { label: "Active Orders", value: "3", change: "2 in progress, 1 pending delivery" },
-    { label: "Total Spent", value: "₦1,850,000", change: "This month", icon: "💳" },
-    { label: "Saved Services", value: "12", change: "Services in your wishlist", icon: "❤️" },
+    { label: "Active Orders", value: stats.activeOrders.toString(), change: "Orders in progress", icon: "📋" },
+    { label: "Total Spent", value: `₦${stats.totalSpent.toLocaleString()}`, change: "All time", icon: "💳" },
+    { label: "Saved Services", value: stats.savedServices.toString(), change: "In your wishlist", icon: "❤️" },
   ];
 
   const getActivityIcon = (type: string) => {
@@ -76,6 +122,14 @@ const Dashboard = () => {
     };
     return icons[type as keyof typeof icons] || MessageCircle;
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-neutral-lightGray">
+        <div className="w-8 h-8 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-lightGray animate-fade-in">
@@ -171,7 +225,7 @@ const Dashboard = () => {
             <h1 className="section-title">Good Morning, Alex Johnson.</h1>
 
             {/* Search Bar */}
-            {/* <div className="flex items-center mb-6 space-x-4">
+          {/* <div className="flex items-center mb-6 space-x-4">
               <div className="max-w-md search-container">
                 <Search className="absolute w-4 h-4 -translate-y-1/2 left-3 top-1/2 text-neutral-textGray" />
                 <input
@@ -286,13 +340,19 @@ const Dashboard = () => {
                         <Star className="w-8 h-8 text-white" />
                       </div>
                     </div>
-                    <img
-                      src="/lovable-Uploads/80542ed3-0db1-42a6-af13-adbba7510682.png"
-                      alt="Avatar"
-                      className="w-16 h-16 mx-auto mb-3 rounded-full"
-                    />
-                    <h3 className="text-lg font-semibold">Alex Johnson</h3>
-                    <p className="text-sm text-neutral-textGray">Premium Customer</p>
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt="Avatar"
+                        className="w-16 h-16 mx-auto mb-3 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-blue-100 flex items-center justify-center">
+                        <User className="w-8 h-8 text-blue-600" />
+                      </div>
+                    )}
+                    <h3 className="text-lg font-semibold">{user?.name || "User"}</h3>
+                    <p className="text-sm text-neutral-textGray">Customer</p>
                   </div>
 
                   <div className="space-y-4">
@@ -319,7 +379,7 @@ const Dashboard = () => {
                       </button>
                       <button
                         className="w-full btn btn-primary"
-                        onClick={() => navigate(`/profile/${userId}`)}
+                        onClick={() => navigate(`/profile/${user?.id}`)}
                       >
                         <User className="w-4 h-4 mr-2" />
                         Profile
@@ -333,9 +393,12 @@ const Dashboard = () => {
                       </button>
                       <button
                         className="w-full text-red-600 border-red-600 btn btn-ghost hover:bg-red-600 hover:text-white"
-                        
+                        onClick={async () => {
+                          await logout();
+                          navigate("/login");
+                        }}
                       >
-                        <LogOut className="w-4 h-4 mr-2" onClick={() => navigate("/logout-page")}/>
+                        <LogOut className="w-4 h-4 mr-2" />
                         Log Out
                       </button>
                     </div>

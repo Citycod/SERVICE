@@ -33,8 +33,10 @@ const Header = () => {
   // Get the correct dashboard URL based on user role
   const getDashboardUrl = () => {
     if (!user) return '/dashboard'
-    
+
     switch (user.role) {
+      case 'admin':
+        return '/admin'
       case 'seller':
         return '/seller-dashboard'
       case 'buyer':
@@ -47,10 +49,12 @@ const Header = () => {
   // Get dashboard label based on user role
   const getDashboardLabel = () => {
     if (!user) return 'Dashboard'
-    
+
     switch (user.role) {
+      case 'admin':
+        return 'Admin Panel'
       case 'seller':
-        return 'Seller Dashboard'
+        return 'Vendor Dashboard'
       case 'buyer':
         return 'Dashboard'
       default:
@@ -63,11 +67,11 @@ const Header = () => {
     const checkLiveStatus = async () => {
       try {
         setIsCheckingLive(true)
-        
+
         // Method 1: Check using YouTube iframe API (client-side)
         const liveStatus = await checkLiveStatusWithIframe()
         setIsLive(liveStatus as boolean)
-        
+
       } catch (error) {
         console.error('Error checking live status:', error)
         setIsLive(false)
@@ -77,10 +81,10 @@ const Header = () => {
     }
 
     checkLiveStatus()
-    
+
     // Check every 2 minutes if we think they're live, otherwise every 10 minutes
     const interval = setInterval(checkLiveStatus, isLive ? 120000 : 600000)
-    
+
     return () => clearInterval(interval)
   }, [isLive])
 
@@ -91,25 +95,25 @@ const Header = () => {
       const iframe = document.createElement('iframe')
       iframe.style.display = 'none'
       iframe.src = `${YOUTUBE_LIVE_URL}?autoplay=0`
-      
+
       iframe.onload = () => {
         // If the iframe loads successfully to the live stream, they're live
         // If it redirects to a waiting screen or channel page, they're not live
         const currentUrl = iframe.contentWindow?.location.href || ''
         const isCurrentlyLive = currentUrl.includes('/live') && !currentUrl.includes('/streams')
         resolve(isCurrentlyLive)
-        
+
         // Clean up
         document.body.removeChild(iframe)
       }
-      
+
       iframe.onerror = () => {
         resolve(false)
         document.body.removeChild(iframe)
       }
-      
+
       document.body.appendChild(iframe)
-      
+
       // Fallback timeout
       setTimeout(() => {
         resolve(false)
@@ -153,18 +157,17 @@ const Header = () => {
                   onClick={toggleAboutDropdown}
                   onMouseEnter={() => setIsAboutOpen(true)}
                   onMouseLeave={() => setIsAboutOpen(false)}
-                  className={`flex items-center gap-1 hover:text-primary-blue transition ${
-                    location.pathname.startsWith('/about') || aboutDropdownItems.some(item => location.pathname === item.to) 
-                      ? 'text-primary-blue' 
-                      : ''
-                  }`}
+                  className={`flex items-center gap-1 hover:text-primary-blue transition ${location.pathname.startsWith('/about') || aboutDropdownItems.some(item => location.pathname === item.to)
+                    ? 'text-primary-blue'
+                    : ''
+                    }`}
                 >
                   {link.label}
                   <FaChevronDown className={`h-3 w-3 transition-transform ${isAboutOpen ? 'rotate-180' : ''}`} />
                 </button>
-                
+
                 {isAboutOpen && (
-                  <div 
+                  <div
                     className="absolute left-0 z-50 w-48 py-2 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg top-full"
                     onMouseEnter={() => setIsAboutOpen(true)}
                     onMouseLeave={() => setIsAboutOpen(false)}
@@ -186,9 +189,8 @@ const Header = () => {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`hover:text-primary-blue transition whitespace-nowrap ${
-                  location.pathname === link.to ? 'text-primary-blue' : ''
-                }`}
+                className={`hover:text-primary-blue transition whitespace-nowrap ${location.pathname === link.to ? 'text-primary-blue' : ''
+                  }`}
               >
                 {link.label}
               </Link>
@@ -201,11 +203,10 @@ const Header = () => {
           {/* YouTube Button - Always visible */}
           <button
             onClick={handleYouTubeClick}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full font-semibold transition-all relative whitespace-nowrap ${
-              isLive 
-                ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg ring-2 ring-red-400' 
-                : 'bg-red-600 text-white hover:bg-red-700'
-            } ${isLive ? 'animate-pulse' : ''}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full font-semibold transition-all relative whitespace-nowrap ${isLive
+              ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg ring-2 ring-red-400'
+              : 'bg-red-600 text-white hover:bg-red-700'
+              } ${isLive ? 'animate-pulse' : ''}`}
             disabled={isCheckingLive}
             title={isLive ? "We're live! Click to watch" : "Visit our YouTube channel"}
           >
@@ -233,14 +234,14 @@ const Header = () => {
                     {user.role}
                   </span>
                 </div>
-                <Link 
-                  to={getDashboardUrl()} 
+                <Link
+                  to={getDashboardUrl()}
                   className="px-4 py-2 text-sm font-semibold transition border rounded-lg text-primary-blue border-primary-blue hover:bg-primary-blue hover:text-white whitespace-nowrap"
                 >
                   {getDashboardLabel()}
                 </Link>
-                <Link 
-                  to="/logout-page" 
+                <Link
+                  to="/logout-page"
                   className="px-4 py-2 text-sm font-semibold text-white transition bg-red-600 rounded-lg hover:bg-red-700 whitespace-nowrap"
                 >
                   Logout
@@ -259,9 +260,9 @@ const Header = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
-            onClick={toggleMobileMenu} 
-            className="p-2 rounded-md md:hidden hover:bg-gray-100" 
+          <button
+            onClick={toggleMobileMenu}
+            className="p-2 rounded-md md:hidden hover:bg-gray-100"
             aria-label="Toggle menu"
           >
             {isMobileOpen ? <FaTimes className="w-6 h-6 text-gray-800" /> : <FaBars className="w-6 h-6 text-gray-800" />}
@@ -305,18 +306,17 @@ const Header = () => {
                 </Link>
               )
             ))}
-            
+
             {/* Mobile YouTube Button */}
             <button
               onClick={() => {
                 handleYouTubeClick()
                 toggleMobileMenu()
               }}
-              className={`flex items-center justify-center gap-2 py-3 rounded-full font-semibold transition-all ${
-                isLive 
-                  ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg' 
-                  : 'bg-red-600 text-white hover:bg-red-700'
-              } ${isLive ? 'animate-pulse' : ''}`}
+              className={`flex items-center justify-center gap-2 py-3 rounded-full font-semibold transition-all ${isLive
+                ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg'
+                : 'bg-red-600 text-white hover:bg-red-700'
+                } ${isLive ? 'animate-pulse' : ''}`}
             >
               <FaYoutube className="w-5 h-5" />
               <span>{isLive ? 'Live Now' : 'YouTube'}</span>
@@ -340,15 +340,15 @@ const Header = () => {
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <Link 
-                      to={getDashboardUrl()} 
-                      className="py-2 text-sm font-semibold text-center text-white transition rounded-lg bg-primary-blue hover:bg-primary-dark" 
+                    <Link
+                      to={getDashboardUrl()}
+                      className="py-2 text-sm font-semibold text-center text-white transition rounded-lg bg-primary-blue hover:bg-primary-dark"
                       onClick={toggleMobileMenu}
                     >
                       {getDashboardLabel()}
                     </Link>
-                    <Link 
-                      to="/logout-page" 
+                    <Link
+                      to="/logout-page"
                       className="py-2 text-sm font-semibold text-center text-white transition bg-red-600 rounded-lg hover:bg-red-700"
                       onClick={toggleMobileMenu}
                     >
@@ -358,16 +358,16 @@ const Header = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
-                  <Link 
-                    to="/login" 
-                    className="py-2 text-sm font-semibold text-center transition border rounded-lg text-primary-blue border-primary-blue hover:bg-primary-blue hover:text-white" 
+                  <Link
+                    to="/login"
+                    className="py-2 text-sm font-semibold text-center transition border rounded-lg text-primary-blue border-primary-blue hover:bg-primary-blue hover:text-white"
                     onClick={toggleMobileMenu}
                   >
                     Sign in
                   </Link>
-                  <Link 
-                    to="/signup" 
-                    className="py-2 text-sm font-semibold text-center text-white transition rounded-lg bg-primary-blue hover:bg-primary-dark" 
+                  <Link
+                    to="/signup"
+                    className="py-2 text-sm font-semibold text-center text-white transition rounded-lg bg-primary-blue hover:bg-primary-dark"
                     onClick={toggleMobileMenu}
                   >
                     Join
